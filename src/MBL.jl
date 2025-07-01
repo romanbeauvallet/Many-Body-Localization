@@ -2,7 +2,7 @@
 module MBL
 
 include("Heisenberg.jl")
-export heisenberghamiltonian
+export gateTrotterSuzukiandhamiltonian
 
 
 end # module MBL

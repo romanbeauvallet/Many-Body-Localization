@@ -10,7 +10,8 @@ using MBL
 N = 20
 J = 1
 h = 0.1
+δτ = 1e-3
 
 ################ Run ################
 
-H = heisenberghamiltonian(J, h, N)
+H = gateTrotterSuzukiandhamiltonian(J, h, N, δτ)
