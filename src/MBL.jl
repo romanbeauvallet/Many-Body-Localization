@@ -1,5 +1,6 @@
+#!usr/bin/env julia
 module MBL
 
-greet() = print("Hello World!")
+
 
 end # module MBL
