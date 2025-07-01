@@ -1,0 +1,4 @@
+name = "MBL"
+uuid = "8a7e02e6-d42e-4772-9088-e0cb2b2c55b8"
+authors = ["Roman Beauvallet <roman.beauvallet@ens-lyon.fr>"]
+version = "0.1.0"
