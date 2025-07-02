@@ -11,20 +11,39 @@ using Plots
 """
 return the site list and the energy per site 
 """
-function energyagainstsite()
-
+function energyagainstsite(mps, h)
+    N = length(mps)
+    sites = collect(1:2:N-2)
+    Energypersite = Vector{}()
+    @showprogress for i in sites
+        push!(Energypersite, energysite(mps, i, h))
+    end
+    return sites, Energypersite
 end
 
 """
 return the energy list of the site i with respect to gates time step
 """
-function energyagainstdeltatime()
-
-end
+function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax)
+    timesteplist = reverse(collect(gamme[1]:step:gamme[2]))
+    EnergyList = Vector{}()
+    @showprogress for j in eachindex(timesteplist)
+        mpsinit = tebdstepHeisenbergRow!(numbersweep, mpsinit, h, timesteplist[j], cutoff, Dmax) 
+        e= energysite(mpsinit, site_measure, h)
+        push!(EnergyList, e)
+    end
+    return timesteplist, EnergyList
+end 
 
 """
 return the site list and the magnet (Sz) per site
 """
-function magnetagainstsite()
-
+function magnetagainstsite(mps)
+    N = length(mps)
+    sites = collect(1:1:N)
+    Magnetpersite = Vector{}()
+    @showprogress for i in sites
+        push!(Magnetpersite, measure_Sz(mps, i))
+    end
+    return sites, Magnetpersite
 end
