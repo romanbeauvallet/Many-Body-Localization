@@ -47,3 +47,4 @@ function magnetagainstsite(mps)
     end
     return sites, Magnetpersite
 end
+

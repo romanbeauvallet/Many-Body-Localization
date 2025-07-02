@@ -58,6 +58,7 @@ function gateTrotterSuzukirow(mps, h, δτ)
     N = length(mps)
     s = siteinds(mps)
     gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+    append!(gates, reverse(gates))
     return gates
 end
 

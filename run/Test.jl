@@ -11,14 +11,14 @@ println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 40
+N = 100
 J = 1
 h = 0
-δτ = 5e-3
+δτ = 1e-3
 D = 10
 site_measure = div(N, 2)
-n_sweep = 200
-cutoff = 1e-20
+n_sweep = 100
+cutoff = 1e-30
 Dmax = 300
 Beta = n_sweep * δτ
 
@@ -34,44 +34,22 @@ function test()
     @show e_test
 end
 ############## Run convergence #################
-EnergytotList = Vector{}()
-EnergysiteList = Vector{}()
-Sz_list = Vector{}()
-mps_init, _ = random_initialized_MPS(N, D)
-time_list = reverse(collect(1e-5:1e-3:2e-2))
-site_list = collect(1:1:N)
-function voidenergy()
-    update = tebdstepHeisenbergRow!(n_sweep, mps_init, h, 2e-2, cutoff, Dmax)
-    @showprogress for k in eachindex(time_list)
-        update = tebdstepHeisenbergRow!(n_sweep, update, h, time_list[k], cutoff, Dmax)
-        #H = hamiltonianHeisenberg(update, h)
-        e = energysite(update, site_measure, h)
-        push!(EnergyList, e)
-    end
-end
 
-voidenergy()
+mps_start, s = random_initialized_MPS(N, D)
+copy = deepcopy(mps_start)
+converged_mps_2step = tebdstepHeisenberg!(n_sweep, mps_start, h, δτ, cutoff, Dmax)
+converged_mps = tebdstepHeisenbergRow!(n_sweep, copy, h, δτ, cutoff, Dmax)
 
-function voidmagnet()
-    update = tebdstepHeisenbergRow!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
-    @showprogress for k in eachindex(site_list)
-        m = measure_Sz(update, site_list[k])
-        push!(Sz_list, m)
-    end
-end
-#voidmagnet()
+sites_2steps, magnetlist_2step = magnetagainstsite(converged_mps_2step)
+sites_1step, magnetlist_1step = magnetagainstsite(converged_mps)
 
-function voidenergysite()
-    update = tebdstepHeisenbergRow!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
-    @showprogress for k in 1:2:N-2
-        e = energysite(update, k, h)
-        push!(EnergysiteList, e)
-    end
-end
-#voidenergysite()
-############ Plots #################
+############## Graphs ##############
+
 gr()
 
-scatter(time_list, EnergyList, label="TEBD", xlabel="\$δτ\$", ylabel="energy in the middle", title="n_sweep = 100, N=30, cutoff=1e-20, h=0")
-#scatter(site_list, Sz_list, label="TEBD", xlabel="site", ylabel="\$S_z\$", title="n_sweep = 100, N=100, cutoff = 1e-20, h=0")
-#scatter(site_list, EnergyList, label="TEBD", xlabel="site", ylabel="\$ϵ\$", title="n_sweep = 100, N=100, cutoff = 1e-20, h=0")
+plot1 = scatter(sites_1step, magnetlist_1step, label="tebd row", xlabel="site", ylabel="Sz", title="N = $N, nsweep = $n_sweep, cutoff = $cutoff")
+scatter!(sites_2steps, magnetlist_2step, label="ordered tebd")
+display(plot1)
+
+
+
