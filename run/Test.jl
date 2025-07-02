@@ -11,13 +11,13 @@ println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 20
+N = 100
 J = 1
 h = 0
-δτ = 1e-2
+δτ = 5e-2
 D = 10
 site_measure = div(N, 2)
-n_sweep = 300
+n_sweep = 200
 cutoff = 1e-20
 Dmax = 300
 Beta = n_sweep * δτ
@@ -34,25 +34,31 @@ function test()
     @show e_test
 end
 ############## Run convergence #################
-EnergyList = zeros(Float64, nthreads())
+EnergyList = Vector{}()
+Sz_list = Vector{}()
 mps_init, _ = random_initialized_MPS(N, D)
 time_list = reverse(collect(1e-5:1e-3:2e-2))
-@show length(time_list)
-function void()
-    update = tebdstepHeisenberg!(n_sweep, mps_init, h, 1e-2, cutoff, Dmax)
-    used = falses(nthreads())
-    @threads for k in eachindex(time_list)
-        tid = threadid()
-        println("Thread ", tid, " travaille sur i = ", k)
-        used[tid] = true
+site_list = collect(1:1:N)
+function voidenergy()
+    update = tebdstepHeisenberg!(n_sweep, mps_init, h, 2e-2, cutoff, Dmax)
+    @showprogress for k in eachindex(time_list)
         update = tebdstepHeisenberg!(n_sweep, update, h, time_list[k], cutoff, Dmax)
         H = hamiltonianHeisenberg(update, h)
         e = measure_H(update, site_measure, H)
-        EnergyList[tid] = e
+        push!(EnergyList, e)
     end
 end
-void()
+
+function voidmagnet()
+    update = tebdstepHeisenberg!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
+    @showprogress for k in eachindex(site_list)
+        m = measure_Sz(update, site_list[k])
+        push!(Sz_list, m)
+    end
+end
+voidmagnet()
 ############ Plots #################
 gr()
 
-scatter(time_list, EnergyList, label="TEBD", xlabel="\$δτ\$", ylabel="energy", title="n_sweep = 300, N=20, cutoff=1e-20, h=0")
+#scatter(time_list, EnergyList, label="TEBD", xlabel="\$δτ\$", ylabel="energy", title="n_sweep = 300, N=20, cutoff=1e-20, h=0")
+scatter(site_list, Sz_list, label="TEBD", xlabel="site", ylabel="\$S_z\$", title="n_sweep = 100, N=30, cutoff = 1e-20, h=0")

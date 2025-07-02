@@ -142,3 +142,22 @@ function tebdstepHeisenberg!(nsweep, mps, h, δτ, cutoff, Dmax)
     return mps
 end
 
+"""
+mps -- converged mps with tebd you want to access to the energy at the link sitemeasure
+sitemeasure -- index of the site
+
+return the energy on the site sitemeasure
+"""
+function energysite!(mps, sitemeasure)
+    orthogonalize!(mps, sitemeasure)
+    sn = siteind(mps, sitemeasure)
+    snn = siteind(mps, sitemeasure + 1)
+    gate =
+        -1 / 2 * op("S+", sn) * op("S-", snn) +
+        -1 / 2 * op("S-", sn) * op("S+", snn)
+    -h * op("Sz", sn) * op("Sz", snn)
+    inter = mps[sitemeasure]*mps[sitemeasure+1]
+    e = scalar(dag(prime(inter, "Site")) * gate * inter)
+    return real(e)
+end
+
