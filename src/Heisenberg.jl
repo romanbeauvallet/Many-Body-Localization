@@ -29,9 +29,10 @@ h -- disorder constant
 
 return the Trotter Suzuki gates and the Hamiltonian to compute TEBD and energy
 """
-function gateTrotterSuzukiandhamiltonian(N, J, h, δτ)
-    s = ITensors.siteinds("SpinHalf", N)
-    gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2,h = h,)) for n in 1:(N-1)], s)
+function gateTrotterSuzukiandhamiltonian(N, h, δτ)
+    s = ITensors.siteinds("S=1/2", N)
+    gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:(N-1)], s)
+    @show typeof(gates)
     append!(gates, reverse(gates))
     ampo = AutoMPO()
     for j in 1:N-1
@@ -43,4 +44,10 @@ function gateTrotterSuzukiandhamiltonian(N, J, h, δτ)
     add!(ampo, -h, "Sz", N)
     H = MPO(ampo, s)
     return gates, H
+end
+"""
+exact energy of the 1D Heisenberg Hamiltonian ground state
+"""
+function exactgroundenergy(J=1)
+    return J * (1 / 4 - log(2))
 end

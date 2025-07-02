@@ -14,4 +14,5 @@ h = 0.1
 
 ################ Run ################
 
-H = gateTrotterSuzukiandhamiltonian(J, h, N, δτ)
+H = gateTrotterSuzukiandhamiltonian(N, h, δτ)
+@show H[1]
