@@ -4,6 +4,7 @@
 using ITensors
 using ITensorMPS
 using LinearAlgebra
+using ProgressMeter
 
 ################## Functions #####################
 
@@ -127,7 +128,7 @@ cutoff -- cutoff in the truncation part in the applying gate process
 return the converged mps with n sweeps along the mps
 """
 function tebdstepHeisenberg!(nsweep, mps, h, δτ, cutoff, Dmax)
-    for i in 1:nsweep
+    @showprogress for i in 1:nsweep
         gateseven = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "even")
         mps = apply(gateseven, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
