@@ -30,7 +30,7 @@ h -- disorder constant
 
 return the Trotter Suzuki gates (order 2) and the Hamiltonian to compute TEBD and energy
 """
-function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)
+function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l'autre contraction où on fait pair impair à la suite au lieu de tout pair puis impair
     N = length(mps)
     s = siteinds(mps)
     if mod(N, 2) == 0
@@ -48,6 +48,16 @@ function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)
     end
     #@show typeof(gates)
     #append!(gates, reverse(gates))
+    return gates
+end
+
+"""
+return the vector of Trotter Suzuki gates in a row that means gates are in the order: (1,2) ; (2,3) ; ...
+"""
+function gateTrotterSuzukirow(mps, h, δτ)
+    N = length(mps)
+    s = siteinds(mps)
+    gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
     return gates
 end
 
@@ -120,6 +130,19 @@ function random_initialized_MPS(N, D)
 end
 
 """
+return the converged mps with the row application of gates
+"""
+function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax)
+    @showprogress for i in 1:nsweep
+        gate = gateTrotterSuzukirow(mps, h, δτ)
+        mps = apply(gate, mps; cutoff, maxdim=Dmax)
+        normalize!(mps)
+    end
+    return mps
+end
+
+
+"""
 nsweep -- number of sweeps
 mps -- initial mps
 gates -- even and odd you want to apply
@@ -142,21 +165,22 @@ function tebdstepHeisenberg!(nsweep, mps, h, δτ, cutoff, Dmax)
     return mps
 end
 
+
 """
 mps -- converged mps with tebd you want to access to the energy at the link sitemeasure
 sitemeasure -- index of the site
 
 return the energy on the site sitemeasure
 """
-function energysite!(mps, sitemeasure)
-    orthogonalize!(mps, sitemeasure)
-    sn = siteind(mps, sitemeasure)
-    snn = siteind(mps, sitemeasure + 1)
+function energysite(mps, sitemeasure)
+    copy = orthogonalize(mps, sitemeasure)
+    sn = siteind(copy, sitemeasure)
+    snn = siteind(copy, sitemeasure + 1)
     gate =
         -1 / 2 * op("S+", sn) * op("S-", snn) +
         -1 / 2 * op("S-", sn) * op("S+", snn)
     -h * op("Sz", sn) * op("Sz", snn)
-    inter = mps[sitemeasure]*mps[sitemeasure+1]
+    inter = copy[sitemeasure]*copy[sitemeasure+1]
     e = scalar(dag(prime(inter, "Site")) * gate * inter)
     return real(e)
 end

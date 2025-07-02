@@ -2,7 +2,8 @@
 module MBL
 
 include("Heisenberg.jl")
-export gateTrotterSuzukiandhamiltonian, measure_H, random_initialized_MPS, tebdstepHeisenberg!, hamiltonianHeisenberg, measure_Sz, energysite!
+export gateTrotterSuzukiandhamiltonian, measure_H, random_initialized_MPS, tebdstepHeisenberg!, hamiltonianHeisenberg, measure_Sz, energysite
+export tebdstepHeisenbergRow!, gateTrotterSuzukirow
 
 
 end # module MBL

@@ -17,7 +17,7 @@ h = 0
 δτ = 5e-2
 D = 10
 site_measure = div(N, 2)
-n_sweep = 200
+n_sweep = 100
 cutoff = 1e-20
 Dmax = 300
 Beta = n_sweep * δτ
@@ -50,13 +50,21 @@ function voidenergy()
 end
 
 function voidmagnet()
-    update = tebdstepHeisenberg!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
+    update = tebdstepHeisenbergRow!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
     @showprogress for k in eachindex(site_list)
         m = measure_Sz(update, site_list[k])
         push!(Sz_list, m)
     end
 end
 voidmagnet()
+
+function voidenergysite()
+    update = tebdstepHeisenberg!(n_sweep, mps_init, h, δτ, cutoff, Dmax)
+    @showprogress for k in eachindex(site_list)
+        e = energysite(update, site_list[k])
+        push!(EnergyList, e)
+    end
+end
 ############ Plots #################
 gr()
 
