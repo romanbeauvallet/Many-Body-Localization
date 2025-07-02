@@ -10,8 +10,13 @@ N = 20
 J = 1
 h = 0.1
 δτ = 1e-3
+D = 10
+site_measure = div(N, 2)
 
 ################ Run ################
 
-H = gateTrotterSuzukiandhamiltonian(N, h, δτ, "even")
-@show H[1]
+gateseven, H, s = gateTrotterSuzukiandhamiltonian(N, h, δτ, "even")
+gatesodd, _, _ = gateTrotterSuzukiandhamiltonian(N, h, δτ, "odd")
+@show typeof(H)
+mps = random_initialized_MPS(s, D)
+e = measure_H(mps, site_measure, H)
