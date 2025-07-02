@@ -2,7 +2,6 @@
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ################ Librairies #############
 
-
 using MBL
 
 ################ Parameters ###############
@@ -14,5 +13,5 @@ h = 0.1
 
 ################ Run ################
 
-H = gateTrotterSuzukiandhamiltonian(N, h, δτ)
+H = gateTrotterSuzukiandhamiltonian(N, h, δτ, "even")
 @show H[1]

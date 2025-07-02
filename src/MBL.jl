@@ -2,7 +2,7 @@
 module MBL
 
 include("Heisenberg.jl")
-export gateTrotterSuzukiandhamiltonian
+export gateTrotterSuzukiandhamiltonian, measure_H
 
 
 end # module MBL

@@ -29,9 +29,21 @@ h -- disorder constant
 
 return the Trotter Suzuki gates and the Hamiltonian to compute TEBD and energy
 """
-function gateTrotterSuzukiandhamiltonian(N, h, δτ)
+function gateTrotterSuzukiandhamiltonian(N, h, δτ, parity::String)
     s = ITensors.siteinds("S=1/2", N)
-    gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:(N-1)], s)
+    if mod(N, 2) == 0
+        if parity == "even"
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:(N-1)], s)
+        elseif parity == "odd"
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:(N-2)], s)
+        end
+    elseif mod(N, 2) == 1
+        if parity == "even"
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:(N-2)], s)
+        elseif parity == "odd"
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:(N-1)], s)
+        end
+    end
     @show typeof(gates)
     append!(gates, reverse(gates))
     ampo = AutoMPO()
@@ -50,4 +62,42 @@ exact energy of the 1D Heisenberg Hamiltonian ground state
 """
 function exactgroundenergy(J=1)
     return J * (1 / 4 - log(2))
+end
+
+"""
+psi -- MPS converged on which you make the measurement 
+n -- site measure
+
+return the Sz value on the site n 
+"""
+function measure_Sz(psi::MPS, n)
+    psi = orthogonalize(psi, n)
+    sn = siteind(psi, n)
+    Sz = scalar(dag(prime(psi[n], "Site")) * op("Sz", sn) * psi[n])
+    return real(Sz)
+end
+
+"""
+psi -- MPS converged on which you make the measurement 
+n -- site measure
+H -- hamiltonian
+
+return the expectation value of H on site n
+"""
+function measure_H(psi, n, H)
+    orthogonalize!(psi, n)
+    sn = siteind(psi, n)
+    index = siteinds(H)
+    replaceind!(H, (index[1] => sn, index[2] => sn'))
+    e = scalar(dag(prime(psi[n], "Site")) * H * psi[n])
+    return real(e)
+end
+
+"""
+return an randmoly initialized MPS
+"""
+function random_initialized_MPS(N, D)
+    s = siteinds("S=1/2", N)
+    psi = random_mps(s, linkdims=D)
+    return psi
 end
