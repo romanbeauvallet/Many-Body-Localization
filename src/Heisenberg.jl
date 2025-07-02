@@ -29,23 +29,36 @@ h -- disorder constant
 
 return the Trotter Suzuki gates (order 2) and the Hamiltonian to compute TEBD and energy
 """
-function gateTrotterSuzukiandhamiltonian(N, h, δτ, parity::String)
-    s = ITensors.siteinds("S=1/2", N)
+function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)
+    N = length(mps)
+    s = siteinds(mps)
     if mod(N, 2) == 0
         if parity == "even"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:(N-1)], s)
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
         elseif parity == "odd"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 2:(N-2)], s)
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 2:2:(N-2)], s)
         end
     elseif mod(N, 2) == 1
         if parity == "even"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:(N-2)], s)
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
         elseif parity == "odd"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 1:(N-1)], s)
+            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 1:2:(N-1)], s)
         end
     end
-    @show typeof(gates)
-    append!(gates, reverse(gates))
+    #@show typeof(gates)
+    #append!(gates, reverse(gates))
+    return gates
+end
+
+"""
+mps -- mps on which you compute the energy
+h -- disorder
+
+return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
+"""
+function hamiltonianHeisenberg(mps, h)
+    N = length(mps)
+    s = siteinds(mps)
     ampo = AutoMPO()
     for j in 1:N-1
         add!(ampo, -1 / 2, "S+", j, "S-", j + 1)
@@ -55,8 +68,9 @@ function gateTrotterSuzukiandhamiltonian(N, h, δτ, parity::String)
     end
     add!(ampo, -h, "Sz", N)
     H = MPO(ampo, s)
-    return gates, H, s
+    return H
 end
+
 """
 exact energy of the 1D Heisenberg Hamiltonian ground state
 """
@@ -98,9 +112,10 @@ D -- bond dimension
 
 return an randmoly initialized MPS with the sites indexes in input 
 """
-function random_initialized_MPS(s, D)
+function random_initialized_MPS(N, D)
+    s = ITensors.siteinds("S=1/2", N)
     psi = random_mps(s, linkdims=D)
-    return psi
+    return psi, s
 end
 
 """
@@ -111,12 +126,18 @@ cutoff -- cutoff in the truncation part in the applying gate process
 
 return the converged mps with n sweeps along the mps
 """
-function tebd!(nsweep, mps, gateseven, gatesodd, cutoff)
+function tebdstepHeisenberg!(nsweep, mps, h, δτ, cutoff, Dmax)
     for i in 1:nsweep
-        mps = apply(gateseven, mps; cutoff)
+        gateseven = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "even")
+        mps = apply(gateseven, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
-        mps = apply(gatesodd, mps; cutoff)
+        gatesodd = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "odd")
+        mps = apply(gatesodd, mps; cutoff, maxdim=Dmax)
+        normalize!(mps)
+        gateseven = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "even")
+        mps = apply(gateseven, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
     end
+    return mps
 end
 
