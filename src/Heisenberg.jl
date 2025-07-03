@@ -97,10 +97,11 @@ n -- site measure
 
 return the Sz value on the site n 
 """
-function measure_Sz(psi::MPS, n)
-    psi = orthogonalize(psi, n)
-    sn = siteind(psi, n)
-    Sz = scalar(dag(prime(psi[n], "Site")) * op("Sz", sn) * psi[n])
+function measure_S(psi::MPS, n, j::String)
+    string = "S"*j
+    psicopy = orthogonalize(psi, n)
+    sn = siteind(psicopy, n)
+    Sz = scalar(dag(prime(psicopy[n], "Site")) * op(string, sn) * psicopy[n])
     return real(Sz)
 end
 
@@ -135,7 +136,7 @@ end
 return the converged mps with the row application of gates
 """
 function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax)
-    @showprogress for i in 1:nsweep
+    @showprogress desc = "tebd steps" for i in 1:nsweep
         gate = gateTrotterSuzukirow(mps, h, δτ)
         mps = apply(gate, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
@@ -174,7 +175,7 @@ sitemeasure -- index of the site
 
 return the energy on the site sitemeasure
 """
-function energysite!(mps, sitemeasure, h)
+function energysite(mps, sitemeasure, h)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
