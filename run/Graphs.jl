@@ -14,9 +14,9 @@ return the site list and the energy per site
 function energyagainstsite(mps, h)
     N = length(mps)
     sites = collect(1:2:N-2)
-    Energypersite = Vector{}()
+    Energypersite = Vector(undef, length(sites))
     @showprogress desc = "calcul energy over sites" for i in sites
-        push!(Energypersite, energysite(mps, i, h))
+        Energypersite[i] =  energysite(mps, i, h)
     end
     return sites, Energypersite
 end
@@ -26,11 +26,11 @@ return the energy list of the site i with respect to gates time step
 """
 function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax)
     timesteplist = reverse(collect(gamme[1]:step:gamme[2]))
-    EnergyList = Vector{}()
+    EnergyList = Vector(undef, length(timesteplist))
     @showprogress for j in eachindex(timesteplist)
         mpsinit = tebdstepHeisenbergRow!(numbersweep, mpsinit, h, timesteplist[j], cutoff, Dmax)
         e = energysite(mpsinit, site_measure, h)
-        push!(EnergyList, e)
+        EnergyList[j] = e
     end
     return timesteplist, EnergyList
 end
@@ -56,7 +56,7 @@ return the indexes that slices a list of length N with the overlap scale
 """
 function section_trunc(N, scale)
     q = div(N, 2)
-    be, st = floor(Int, (1 + (1 - scale) * q)), floor(Int, ((scale + 1) * q))
+    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1) , min(floor(Int, ((scale + 1) * q)), N)
     return be, st
 end
 
@@ -65,13 +65,13 @@ return the average spin against j axis for mps of length N
 """
 function averagespinoverlength(j::String, gammelength::Tuple, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
     sites = collect(gammelength[1]:1:gammelength[2])
-    averagespin = Vector{}()
+    averagespin = Vector(undef, length(sites))
     for i in gammelength[1]:1:gammelength[2]
         @show i
         mpstransit, _ = random_initialized_MPS(i, D0)
         converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax)
         _, averagespintemp = magnetagainstsite(converged, j, gammescale)
-        push!(averagespin, mean(averagespintemp[gammemeasure[1]:gammemeasure[2]]))
+        averagespin[i] = mean(averagespintemp)
     end
     return sites, averagespin
 end
@@ -80,9 +80,10 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     sweeplist = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
     realsweeplist = [gammesweep[3] for k in 1:((gammesweep[2]-gammesweep[1])/gammesweep[3])+1]
     realsweeplist[1] = gammesweep[1]
-    @show realsweeplist
+    #@show realsweeplist
     meanvalues = Vector(undef, length(sweeplist))
     update = mps_init_sweep
+    @show update
     for p in eachindex(realsweeplist)
         @show p, realsweeplist[p]
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)

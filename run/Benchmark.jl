@@ -6,13 +6,13 @@ using ProgressMeter
 using Plots
 
 ################# Parameters ###############
-N = 100
+N = 300
 J = 1
 h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 400
+n_sweep = 100
 cutoff = 1e-15
 Dmax = 300
 Beta = n_sweep * δτ
@@ -24,7 +24,7 @@ gammescale = 0.5
 j = "z"
 gammesweep = (100, 500, 50) #(start, stop, step)
 
-xdata, ydata = MBL.magnetaverageagainstsweep(j, mps_random_debut, gammesweep, gammescale, h, δτ, cutoff, Dmax)
+xdata, ydata = MBL.averagespinoverlength(j, gammelength, gammescale,n_sweep, cutoff, Dmax, D0, δτ, h)
 
 gr()
 
