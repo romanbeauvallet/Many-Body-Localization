@@ -18,13 +18,14 @@ Dmax = 300
 Beta = n_sweep * δτ
 
 ################# Scaling ################
-
+mps_random_debut, _ = random_initialized_MPS(N, D0)
 gammelength = (div(N, 10), N)
-@show gammelength
 gammescale = 0.5
 j = "z"
+gammesweep = (100, 500, 50) #(start, stop, step)
 
-xdata, ydata = MBL.averagespinoverlength(j, gammelength, gammescale, n_sweep, cutoff, Dmax, D0, δτ, h)
+xdata, ydata = MBL.magnetaverageagainstsweep(j, mps_random_debut, gammesweep, gammescale, h, δτ, cutoff, Dmax)
+
 gr()
 
-scatter(xdata, ydata)
+scatter(xdata, ydata, xlabel="tebd sweep number", ylabel="average magnet (Sz) on $gammescale of $N", title="init with random mps")

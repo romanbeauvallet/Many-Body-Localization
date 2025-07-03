@@ -17,11 +17,11 @@ h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 400
+n_sweep = 100
 cutoff = 1e-15
 Dmax = 300
 Beta = n_sweep * δτ
-
+gammescale=1
 ################ Run basic ################
 function test()
     mps, s = random_initialized_MPS(N, D0)
@@ -34,18 +34,17 @@ function test()
     @show e_test
 end
 ############## Run convergence #################
-#mps_start, s = neelstate(N)
-mps_start, s = random_initialized_MPS(N, D0)
-copy = deepcopy(mps_start)
+mps_neel_start, s_neel = neelstate(N)
+mps_random_start, s_random = random_initialized_MPS(N, D0)
 
-converged_mps_2step = tebdstepHeisenberg!(n_sweep, mps_start, h, δτ, cutoff, Dmax)
-converged_mps = tebdstepHeisenbergRow!(n_sweep, copy, h, δτ, cutoff, Dmax)
+converged_mps_random = tebdstepHeisenbergRow!(n_sweep, mps_random_start, h, δτ, cutoff, Dmax)
+converged_mps_neel = tebdstepHeisenbergRow!(n_sweep, mps_neel_start, h, δτ, cutoff, Dmax)
 
-#sites_2steps, magnetlist_2steps = magnetagainstsite(converged_mps_2step)
-#sites_1step, magnetlist_1step = magnetagainstsite(converged_mps)
+sites_neel_magnet, magnetlist_neel = magnetagainstsite(converged_mps_neel, "z", gammescale)
+sites_random_magnet, magnetlist_random = magnetagainstsite(converged_mps_random, "z", gammescale)
 
-sites_1step_energy, energypersite_1step = energyagainstsite(converged_mps, h)
-sites_2steps_energy, energypersite_2steps = energyagainstsite(converged_mps_2step, h)
+site_neel_energy, energy_neel = energyagainstsite(converged_mps_neel, h)
+site_random_energy, energy_random = energyagainstsite(converged_mps_random, h)
 
 #@show mps_start
 #@show converged_mps
@@ -56,8 +55,10 @@ sites_2steps_energy, energypersite_2steps = energyagainstsite(converged_mps_2ste
 
 gr()
 
-plot1 = scatter(sites_1step_energy, energypersite_1step, label="tebd row", xlabel="site", ylabel="Sz", title="N = $N, nsweep = $n_sweep, cutoff = $cutoff")
-scatter!(sites_2steps_energy, energypersite_2steps, label="tebd row", xlabel="site", ylabel="Sz", title="N = $N, nsweep = $n_sweep, cutoff = $cutoff")
-display(plot1)
+plotneel1 = scatter(sites_neel_magnet, magnetlist_neel, label="tebd", xlabel="site", ylabel="Sz", title="N = $N, nsweep = $n_sweep, cutoff = $cutoff, neel")
+plotneel2 = scatter(site_neel_energy, energy_neel, label="tebd", xlabel="site", ylabel="ϵ", title="N = $N, nsweep = $n_sweep, cutoff = $cutoff, neel")
 
+plotrandom2 = scatter(site_neel_energy, energy_neel, label="tebd", xlabel="site", ylabel="ϵ", title="random")
+plotrandom1 = scatter(site_random_energy, energy_random, label="tebd", xlabel="site", ylabel="Sz", title="random")
 
+scatter(plotneel1, plotneel2, plotrandom1, plotrandom2, layout = (2, 2), legend = :topleft)
