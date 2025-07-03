@@ -16,7 +16,7 @@ function energyagainstsite(mps, h)
     sites = collect(1:2:N-2)
     Energypersite = Vector{}()
     @showprogress for i in sites
-        push!(Energypersite, energysite(mps, i, h))
+        push!(Energypersite, energysite!(mps, i, h))
     end
     return sites, Energypersite
 end

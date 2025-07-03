@@ -15,12 +15,14 @@ h -- disorder constant
 
 Define the operator expτ(-JSS - hSz)
 """
-function ITensors.op(::OpName"expτSS", ::SiteType"S=1/2", s1::Index, s2::Index; τ, h)
+function ITensors.op(::OpName"exp-τSS", ::SiteType"S=1/2", s1::Index, s2::Index; τ, h)
     H =
-        -1 / 2 * op("S+", s1) * op("S-", s2) +
-        -1 / 2 * op("S-", s1) * op("S+", s2)
-    -h * op("Sz", s1) * op("Sz", s2)
-    return exp(τ * H)
+        1 / 2 * op("S+", s1) * op("S-", s2) +
+        1 / 2 * op("S-", s1) * op("S+", s2) +
+    op("Sz", s1) * op("Sz", s2) +
+    h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
+    #@show LinearAlgebra.eigvals(reshape(Array(H.tensor), (4, 4)))
+    return exp(-τ * H)
 end
 
 """
@@ -35,15 +37,15 @@ function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l
     s = siteinds(mps)
     if mod(N, 2) == 0
         if parity == "even"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
         elseif parity == "odd"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 2:2:(N-2)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 2:2:(N-2)], s)
         end
     elseif mod(N, 2) == 1
         if parity == "even"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
         elseif parity == "odd"
-            gates = ops([("expτSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 1:2:(N-1)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 1:2:(N-1)], s)
         end
     end
     #@show typeof(gates)
@@ -57,7 +59,7 @@ return the vector of Trotter Suzuki gates in a row that means gates are in the o
 function gateTrotterSuzukirow(mps, h, δτ)
     N = length(mps)
     s = siteinds(mps)
-    gates = ops([("expτSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h,)) for n in 1:1:(N-1)], s)
     append!(gates, reverse(gates))
     return gates
 end
@@ -73,12 +75,12 @@ function hamiltonianHeisenberg(mps, h)
     s = siteinds(mps)
     ampo = AutoMPO()
     for j in 1:N-1
-        add!(ampo, -1 / 2, "S+", j, "S-", j + 1)
-        add!(ampo, -1 / 2, "S-", j, "S+", j + 1)
-        add!(ampo, -1 / 2, "Sz", j, "Sz", j + 1)
-        add!(ampo, -h, "Sz", j)
+        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+        add!(ampo, 1 , "Sz", j, "Sz", j + 1)
+        add!(ampo, h, "Sz", j)
     end
-    add!(ampo, -h, "Sz", N)
+    add!(ampo, h, "Sz", N)
     H = MPO(ampo, s)
     return H
 end
@@ -173,16 +175,29 @@ sitemeasure -- index of the site
 
 return the energy on the site sitemeasure
 """
-function energysite(mps, sitemeasure, h)
+function energysite!(mps, sitemeasure, h)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
     gate =
-        -1 / 2 * op("S+", sn) * op("S-", snn) +
-        -1 / 2 * op("S-", sn) * op("S+", snn)
-    -h * op("Sz", sn) * op("Sz", snn)
+        1 / 2 * op("S+", sn) * op("S-", snn) +
+        1 / 2 * op("S-", sn) * op("S+", snn) +
+    op("Sz", sn) * op("Sz", snn) +
+    h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
     inter = copy[sitemeasure] * copy[sitemeasure+1]
+    normalize!(inter)
     e = scalar(dag(prime(inter, "Site")) * gate * inter)
     return real(e)
 end
 
+
+"""
+N -- number of sites
+
+return a Neel state of the form |↑↓↑↓...> with N sites
+"""
+function neelstate(N)
+    s = siteinds("S=1/2", N)
+    mps = MPS(s, n -> isodd(n) ? "Up" : "Dn")
+    return mps, s
+end
