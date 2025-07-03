@@ -66,9 +66,9 @@ return the average spin against j axis for mps of length N
 function averagespinoverlength(j::String, gammelength::Tuple, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
     sites = collect(gammelength[1]:1:gammelength[2])
     averagespin = Vector(undef, length(sites))
-    for i in gammelength[1]:1:gammelength[2]
-        @show i
-        mpstransit, _ = random_initialized_MPS(i, D0)
+    for i in eachindex(sites)
+        @show i, gammelength[2]
+        mpstransit, _ = random_initialized_MPS(sites[i], D0)
         converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax)
         _, averagespintemp = magnetagainstsite(converged, j, gammescale)
         averagespin[i] = mean(averagespintemp)
@@ -85,7 +85,7 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     update = mps_init_sweep
     @show update
     for p in eachindex(realsweeplist)
-        @show p, realsweeplist[p]
+        @show p, realsweeplist[end]
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)
         _, magnet = magnetagainstsite(update, j, gammescale)
         meanvalues[p] = mean(magnet)

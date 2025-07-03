@@ -6,7 +6,7 @@ using ProgressMeter
 using Plots
 
 ################# Parameters ###############
-N = 300
+N = 100
 J = 1
 h = 0
 δτ = 1e-3
