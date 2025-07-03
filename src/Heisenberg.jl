@@ -21,7 +21,6 @@ function ITensors.op(::OpName"exp-τSS", ::SiteType"S=1/2", s1::Index, s2::Index
         1 / 2 * op("S-", s1) * op("S+", s2) +
     op("Sz", s1) * op("Sz", s2) +
     h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
-    #@show LinearAlgebra.eigvals(reshape(Array(H.tensor), (4, 4)))
     return exp(-τ * H)
 end
 
@@ -37,15 +36,15 @@ function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l
     s = siteinds(mps)
     if mod(N, 2) == 0
         if parity == "even"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
         elseif parity == "odd"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 2:2:(N-2)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ, h=h,)) for n in 2:2:(N-2)], s)
         end
     elseif mod(N, 2) == 1
         if parity == "even"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
         elseif parity == "odd"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=-δτ, h=h,)) for n in 1:2:(N-1)], s)
+            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ, h=h,)) for n in 1:2:(N-1)], s)
         end
     end
     #@show typeof(gates)
@@ -59,7 +58,7 @@ return the vector of Trotter Suzuki gates in a row that means gates are in the o
 function gateTrotterSuzukirow(mps, h, δτ)
     N = length(mps)
     s = siteinds(mps)
-    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h,)) for n in 1:1:(N-1)], s)
+    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
     append!(gates, reverse(gates))
     return gates
 end
