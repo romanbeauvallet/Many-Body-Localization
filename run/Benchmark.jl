@@ -22,10 +22,10 @@ mps_random_debut, _ = random_initialized_MPS(N, D0)
 gammelength = (div(N, 10), N)
 gammescale = 0.5
 j = "z"
-gammesweep = (100, 500, 50) #(start, stop, step)
+gammesweep = (1000, 3000, 500) #(start, stop, step)
 
-xdata, ydata = MBL.averagespinoverlength(j, gammelength, gammescale,n_sweep, cutoff, Dmax, D0, δτ, h)
+xdata, ydata = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
 
 gr()
 
-scatter(xdata, ydata, xlabel="tebd sweep number", ylabel="average magnet (Sz) on $gammescale of $N", title="init with random mps")
+scatter(xdata, ydata, xlabel="tebd sweep number", ylabel="<ϵ> on $gammescale sites of $N sites", title="init with random mps")

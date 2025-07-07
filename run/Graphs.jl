@@ -11,12 +11,16 @@ using Statistics
 """
 return the site list and the energy per site 
 """
-function energyagainstsite(mps, h)
+function energyagainstsite(mps, h, scale)
     N = length(mps)
-    sites = collect(1:2:N-2)
+    start, stop = section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:2:stop)
+    #@show sites
     Energypersite = Vector(undef, length(sites))
-    @showprogress desc = "calcul energy over sites" for i in sites
-        Energypersite[i] =  energysite(mps, i, h)
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energysite(mps, sites[i], h)
     end
     return sites, Energypersite
 end
@@ -56,7 +60,7 @@ return the indexes that slices a list of length N with the overlap scale
 """
 function section_trunc(N, scale)
     q = div(N, 2)
-    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1) , min(floor(Int, ((scale + 1) * q)), N)
+    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
     return be, st
 end
 
@@ -78,7 +82,7 @@ end
 
 function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammescale, cutoff, Dmax, δτ, h)
     sweeplist = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
-    realsweeplist = [gammesweep[3] for k in 1:((gammesweep[2]-gammesweep[1])/gammesweep[3])+1]
+    realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
     realsweeplist[1] = gammesweep[1]
     #@show realsweeplist
     meanvalues = Vector(undef, length(sweeplist))
@@ -90,4 +94,24 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
         _, magnet = magnetagainstsite(update, j, gammescale)
         meanvalues[p] = mean(magnet)
     end
+end
+"""
+return the average energy on x% of the total number of spins with respect to number of spins
+"""
+function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutoff, Dmax, δτ, h)
+    sweeplist = collect(gammesweep[1]:gammesweep[3]:gammesweep[2]) #on crée la liste des sweeps (nombre total de sweep de chaque pas)
+    realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1] #on est plus efficace si on garde le même mps et qu'on ajoute des sweep
+    realsweeplist[1] = gammesweep[1]
+    #@show realsweeplist
+    meanvalues = Vector(undef, length(sweeplist))
+    update = mps_init_sweep
+    @show update
+    for p in eachindex(realsweeplist)
+        @show p, sweeplist[p]
+        update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)
+        _, magnet = energyagainstsite(update, h, gammescale)
+        #@show magnet
+        meanvalues[p] = mean(magnet)
+    end
+    return sweeplist, meanvalues
 end
