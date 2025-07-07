@@ -17,6 +17,8 @@ analyse_simulations_julia/pyvenv.cfg
 # caches Python
 __pycache__/
 *.py[cod]
+CACHEDIR.TAG
+
 
 # notebooks Jupyter
 .ipynb_checkpoints/
