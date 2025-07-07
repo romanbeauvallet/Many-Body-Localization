@@ -6,20 +6,20 @@ using ProgressMeter
 using Plots
 using JSON
 ################# Parameters ###############
-N = 100
+N = 150
 J = 1
 h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 100
+n_sweep = 1000
 cutoff = 1e-15
 Dmax = 500
 Beta = n_sweep * δτ
 gammelength = (div(N, 10), N)
 gammescale = 0.5
 j = "z"
-gammesweep = (1000, 3000, 500) #(start, stop, step)
+gammesweep = (500, 2000, 500) #(start, stop, step)
 
 params = Dict(
     "N" => N,
@@ -35,24 +35,28 @@ params = Dict(
 
 ################# Scaling ################
 mps_random_debut, _ = random_initialized_MPS(N, D0)
-final = tebdstepHeisenbergRow!(5000, mps_random_debut, h, δτ, cutoff, Dmax)
-_, energyinf = mean(energyagainstsite(final, h, gammescale))
 
-
-xdata, ydata = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
+x1data, y1data = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
+x2data, y4data = MBL.magnetaverageagainstlength(j, gammelength, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
+_, y2data = MBL.magnetaverageagainstsweep(j, mps_init_sweep, gammesweep, gammescale, cutoff, Dmax, δτ, h)
+_, y3data = MBL.energyaverageagainstlength(gammelength, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
 
 results = Dict(
-
-
-
+    "sweep list" => x1data,
+    "energy sweep list" => y1data,
+    "length list" => x2data, 
+    "magnetization sweep list" => y2data,
+    "energy length list" => y3data,
+    "magnetization length list" => y4data
 )
-
 
 simulation = Dict(
     "parameters" => params,
     "results" => results
 )
 
-open("simulation_output.json", "w") do io
-    JSON.print(io, simulation_data)
+json_path = joinpath(@__DIR__, "analyse_simulations_julia", "data.json")
+
+open("json_path", "w") do io
+    JSON.print(io, simulation)
 end
