@@ -6,20 +6,20 @@ using ProgressMeter
 using Plots
 using JSON
 ################# Parameters ###############
-N = 50
+N = 100
 J = 1
 h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 50
+n_sweep = 1000
 cutoff = 1e-15
 Dmax = 500
 Beta = n_sweep * δτ
 gammelength = (div(N, 10), N)
 gammescale = 0.5
 j = "z"
-gammesweep = (100, 200, 50) #(start, stop, step)
+gammesweep = (500, 2000, 100) #(start, stop, step)
 
 params = Dict(
     "N" => N,
