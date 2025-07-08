@@ -73,7 +73,7 @@ function magnetaverageagainstlength(j::String, gammelength::Tuple, gammescale, n
     sites = collect(gammelength[1]:1:gammelength[2])
     averagespin = Vector(undef, length(sites))
     for i in eachindex(sites)
-        @show i, gammelength[2]
+        @show i, gammelength[2], sites[i]
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
         converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax)
         _, averagespintemp = magnetagainstsite(converged, j, gammescale)
@@ -89,16 +89,17 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     sweeplist = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
     realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
     realsweeplist[1] = gammesweep[1]
-    #@show realsweeplist
-    meanvalues = Vector(undef, length(sweeplist))
+    @show realsweeplist
+    meanvalues = Vector(undef, length(realsweeplist))
     update = mps_init_sweep
-    @show update
+    #@show update
     for p in eachindex(realsweeplist)
         @show p, realsweeplist[end]
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)
         _, magnet = magnetagainstsite(update, j, gammescale)
         meanvalues[p] = mean(magnet)
     end
+    return sweeplist, meanvalues
 end
 
 
@@ -112,7 +113,7 @@ function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutof
     #@show realsweeplist
     meanvalues = Vector(undef, length(sweeplist))
     update = mps_init_sweep
-    @show update
+    #@show update
     for p in eachindex(realsweeplist)
         @show p, sweeplist[p]
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)
@@ -129,11 +130,11 @@ return the average energy (over gammescale*length spins) for a fixed number of t
 function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
     sites = collect(gammelength[1]:1:gammelength[2])
     averageenergy = Vector(undef, length(sites))
-    for i in eachindex(sites)
-        @show i, gammelength[i]
+    @showprogress for i in eachindex(sites)
+        @show i, sites[i]
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
         converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax)
-        _, averageenergytemp = energyagainstsite(converged, j, gammescale)
+        _, averageenergytemp = energyagainstsite(converged, h, gammescale)
         averageenergy[i] = mean(averageenergytemp)
     end
     return sites, averageenergy
