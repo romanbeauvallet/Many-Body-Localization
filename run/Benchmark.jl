@@ -6,34 +6,25 @@ using ProgressMeter
 using Plots
 using JSON
 ################# Parameters ###############
-N = 100
-J = 1
-h = 0
-δτ = 1e-3
-D0 = 10
-site_measure = div(N, 2)
-n_sweep = 1000
-cutoff = 1e-15
-Dmax = 500
-Beta = n_sweep * δτ
-gammelength = (div(N, 10), N)
-gammescale = 0.5
-j = "z"
-gammesweep = (500, 2000, 100) #(start, stop, step)
+# Lire les arguments
+input_file = ARGS[1]
+output_file = ARGS[2]
+sim_id = parse(Int, ARGS[3])
 
-params = Dict(
-    "N" => N,
-    "J" => 1,
-    "D0" => D0,
-    "site measure" => site_measure,
-    "cutoff" => cutoff,
-    "max bond dimension" => Dmax,
-    "Trotter-Suzuki step" => δτ,
-    "disorder" => h, 
-    "nsweep range" => gammesweep,
-    "length range" => gammelength,
-    "fixed number of sweep" => n_sweep
-)
+params = JSON.parsefile(input_file)
+
+# Extraire les paramètres
+N = params["N"]
+D0 = params["D0"]
+h = params["disorder"]
+δτ = params["Trotter-Suzuki step"]
+Dmax = params["max bond dimension"]
+gammesweep = params["nsweep range"]
+gammescale = params["gammescale"]
+cutoff = params["cutoff"]
+n_sweep = params["fixed number of sweep"]
+j = params["axis"]
+
 
 ################# Scaling ################
 mps_random_debut, _ = random_initialized_MPS(N, D0)
@@ -55,7 +46,7 @@ results = Dict(
 )
 
 simulation = Dict(
-    "parameters" => params,
+    "input" => params,
     "results" => results
 )
 
