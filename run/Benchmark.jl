@@ -29,7 +29,7 @@ params = Dict(
     "cutoff" => cutoff,
     "max bond dimension" => Dmax,
     "Trotter-Suzuki step" => δτ,
-    "disorder" => h, 
+    "disorder" => h,
     "nsweep range" => gammesweep,
     "length range" => gammelength,
     "fixed number of sweep" => n_sweep
@@ -48,7 +48,7 @@ _, y3data = MBL.energyaverageagainstlength(gammelength, gammescale, n_sweep, cut
 results = Dict(
     "sweep list" => x1data,
     "energy sweep list" => y1data,
-    "length list" => x2data, 
+    "length list" => x2data,
     "magnetization sweep list" => y2data,
     "energy length list" => y3data,
     "magnetization length list" => y4data
@@ -59,7 +59,7 @@ simulation = Dict(
     "results" => results
 )
 
-json_path = joinpath(@__DIR__,"..", "analyse_simulations_julia", "data.json")
+json_path = joinpath(@__DIR__, "..", "analyse_simulations_julia", "data.json")
 
 open(json_path, "w") do io
     write(io, JSON.json(simulation, 2))
