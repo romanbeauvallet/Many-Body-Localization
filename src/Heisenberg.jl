@@ -209,11 +209,11 @@ ATTENTION NOT WORKING
 """
 function maxbonddim(mps)
     maxdim = 0
-    println("maxdim")
+    #@show typeof(mps)
     for i in 1:(length(mps) - 1)
-        @show i
+        #@show i
         s = commonind(mps[i], mps[i+1])
-        @show s
+        #@show s
         if s === nothing
             continue
         end
@@ -221,4 +221,3 @@ function maxbonddim(mps)
     end
     return maxdim
 end
-
