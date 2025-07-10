@@ -31,6 +31,7 @@ input_data = JSON.parsefile(json_input)
 map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
 N = input_data["N"]
+J = input_data["N"]
 D0 = input_data["D0"]
 h = input_data["disorder"]
 δτ = input_data["Trotter-Suzuki step"]
