@@ -79,7 +79,7 @@ function void()
         println("Time evolution with tebd")
         update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
         push!(Maxbonddim,maxbonddim(update_tebd))
-        metadata["maximum bond dimension"] = Maxbonddim
+        metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
         #####measure
         println("Measure average energy")

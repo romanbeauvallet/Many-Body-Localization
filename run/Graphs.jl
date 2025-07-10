@@ -14,7 +14,7 @@ function energyagainstsite(mps, h, scale)
     N = length(mps)
     start, stop = section_trunc(N, scale)
     stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:2:stop)
+    sites = collect(start:1:stop)
     #@show sites
     Energypersite = Vector(undef, length(sites))
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
