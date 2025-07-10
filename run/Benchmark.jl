@@ -50,7 +50,7 @@ mps_random_debut, _ = random_initialized_MPS(N, D0)
 
 # ===================== data 
 
-metadata = Dict(
+metadata = Dict{String, Any}(
     "Dmax" => Dmax,
     "J" => J,
     "cutoff" => cutoff,
@@ -60,7 +60,7 @@ metadata = Dict(
 println("\nmetadata:")
 display(metadata)
 
-results = Dict(
+results = Dict{String, Any}(
     "energy sweep list" => nothing,
     "magnetization sweep list" => nothing,
 )
