@@ -18,9 +18,7 @@ Pkg.status()
 # ===================== parameters
 if length(ARGS) < 1
     println("Missing input file: use default")
-    json_input =
-        String(dirname(@__FILE__)) *
-        "/../ceph/dataHeisenberg/input/config_premierconfig.json"
+    throw(ErrorException)
 else
     json_input = String(ARGS[1])
 end
@@ -40,13 +38,7 @@ gammescale = input_data["gammescale"]
 cutoff = input_data["cutoff"]
 n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
-rad::String = String(input_data["rad"])
-
-# Point d’entrée : récupère l’argument passé par SLURM
-if abspath(PROGRAM_FILE) == @__FILE__
-    sim_id = parse(Int, ARGS[1])
-    run_simulation(sim_id)
-end
+savefile = String(input_data["savefile"])
 
 ################# Run ###############
 sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
@@ -65,7 +57,6 @@ metadata = Dict(
 )
 println("\nmetadata:")
 display(metadata)
-@show beta_values
 
 results = Dict(
     "energy sweep list" => nothing,
@@ -104,6 +95,4 @@ for i in eachindex(realsweeplist)
     flush(stdout)
 end
 
-open(json_path, "w") do io
-    write(io, JSON.json(simulation, 2))
-end
+println("simulation finie")
