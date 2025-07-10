@@ -80,7 +80,7 @@ function void()
         #####measure
         println("Measure average energy")
         _, e = energyagainstsite(update_tebd, h, gammescale)
-        push!(Energytebd[i], mean(e))
+        push!(Energytebd, mean(e))
         results["energy sweep list"] = Energytebd
 
         println("Mesure average magnet")
