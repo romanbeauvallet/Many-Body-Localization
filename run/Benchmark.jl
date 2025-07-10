@@ -50,7 +50,7 @@ mps_random_debut, _ = random_initialized_MPS(N, D0)
 
 # ===================== data 
 
-metadata = Dict{String, Any}(
+metadata = Dict{String,Any}(
     "Dmax" => Dmax,
     "J" => J,
     "cutoff" => cutoff,
@@ -60,32 +60,32 @@ metadata = Dict{String, Any}(
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String, Any}(
+results = Dict{String,Any}(
     "energy sweep list" => nothing,
     "magnetization sweep list" => nothing,
 )
 
-Energytebd = Vector(undef, length(realsweeplist))
-Magnettebd = Vector(undef, length(realsweeplist))
-Maxbonddim = Vector(undef, length(realsweeplist))
+Energytebd = Vector()
+Magnettebd = Vector()
+Maxbonddim = Vector()
 #####evolv
 function void()
     update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
         update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
-        #Maxbonddim[i] = maxbonddim(update)
-        metadata["maximum bond dimension"] = Maxbonddim
+        #push!(Maxbonddim,maxbonddim(update))
+        #metadata["maximum bond dimension"] = Maxbonddim
 
         #####measure
         println("Measure average energy")
         _, e = energyagainstsite(update_tebd, h, gammescale)
-        Energytebd[i] = mean(e)
+        push!(Energytebd[i], mean(e))
         results["energy sweep list"] = Energytebd
 
         println("Mesure average magnet")
         _, magnet = magnetagainstsite(update_tebd, j, gammescale)
-        Magnettebd[i] = mean(magnet)
+        push!(Magnettebd, mean(magnet))
         results["magnetization sweep list"] = Magnettebd
 
         #####data saving
