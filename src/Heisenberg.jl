@@ -197,7 +197,32 @@ N -- number of sites
 return a Neel state of the form |↑↓↑↓...> with N sites
 """
 function neelstate(N)
-    s = siteinds("S=1/2", N)
+    s = siteinds("S=1/2", N, conserve_qns=true)
     mps = MPS(s, n -> isodd(n) ? "Up" : "Dn")
     return mps, s
 end
+
+"""
+return the max bond dimension in the mps
+
+ATTENTION NOT WORKING 
+"""
+function maxbonddim(mps)
+    maxdim = 0
+    println("maxdim")
+    for i in 1:(length(mps) - 1)
+        @show i
+        s = commonind(mps[i], mps[i+1])
+        @show s
+        if s === nothing
+            continue
+        end
+        dim = dim(s)
+        maxdim = max(maxdim, dim)
+    end
+    return maxdim
+end
+
+mps, s = neelstate(20)
+
+maxbonddim(mps)

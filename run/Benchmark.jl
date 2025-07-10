@@ -2,55 +2,107 @@
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ############### Librairies #################
 using MBL
+using MKL
 using ProgressMeter
 using Plots
 using JSON
-################# Parameters ###############
-# Lire les arguments
-input_file = ARGS[1]
-output_file = ARGS[2]
-sim_id = parse(Int, ARGS[3])
+using Statistics
 
-params = JSON.parsefile(input_file)
+# ===================== log
+println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
+println("Julia $VERSION")
+@show Base.julia_cmd()
+@show Threads.nthreads()
+@show LinearAlgebra.BLAS.get_num_threads()
+Pkg.status()
+# ===================== parameters
+if length(ARGS) < 1
+    println("Missing input file: use default")
+    json_input =
+        String(dirname(@__FILE__)) *
+        "/../ceph/dataHeisenberg/input/config_premierconfig.json"
+else
+    json_input = String(ARGS[1])
+end
 
-# Extraire les paramètres
-N = params["N"]
-D0 = params["D0"]
-h = params["disorder"]
-δτ = params["Trotter-Suzuki step"]
-Dmax = params["max bond dimension"]
-gammesweep = params["nsweep range"]
-gammescale = params["gammescale"]
-cutoff = params["cutoff"]
-n_sweep = params["fixed number of sweep"]
-j = params["axis"]
+println("\nLoad input parameters from file $json_input")
 
+input_data = JSON.parsefile(json_input)
+map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
-################# Scaling ################
+N = input_data["N"]
+D0 = input_data["D0"]
+h = input_data["disorder"]
+δτ = input_data["Trotter-Suzuki step"]
+Dmax = input_data["max bond dimension"]
+gammesweep = input_data["nsweep range"]
+gammescale = input_data["gammescale"]
+cutoff = input_data["cutoff"]
+n_sweep = input_data["fixed number of sweep"]
+j = input_data["axis"]
+rad::String = String(input_data["rad"])
+
+# Point d’entrée : récupère l’argument passé par SLURM
+if abspath(PROGRAM_FILE) == @__FILE__
+    sim_id = parse(Int, ARGS[1])
+    run_simulation(sim_id)
+end
+
+################# Run ###############
+sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
+realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
+realsweeplist[1] = gammesweep[1]
 mps_random_debut, _ = random_initialized_MPS(N, D0)
 
-x1data, y1data = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
-x2data, y4data = MBL.magnetaverageagainstlength(j, gammelength, gammescale, n_sweep, cutoff, Dmax, D0, δτ, h)
-_, y2data = MBL.magnetaverageagainstsweep(j, mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
-_, y3data = MBL.energyaverageagainstlength(gammelength, gammescale, n_sweep, cutoff, Dmax, D0, δτ, h)
+# ===================== data 
 
-#@show "it works"
+metadata = Dict(
+    "Dmax" => Dmax,
+    "J" => J,
+    "cutoff" => cutoff,
+    "sweep range" => sweep_list, 
+    "maximum bond dimension" => nothing
+)
+println("\nmetadata:")
+display(metadata)
+@show beta_values
 
 results = Dict(
-    "sweep list" => x1data,
-    "energy sweep list" => y1data,
-    "length list" => x2data, 
-    "magnetization sweep list" => y2data,
-    "energy length list" => y3data,
-    "magnetization length list" => y4data
+    "energy sweep list" => nothing,
+    "magnetization sweep list" => nothing,
 )
 
-simulation = Dict(
-    "input" => params,
-    "results" => results
-)
+Energyetbd = Vector(undef, length(realsweeplist))
+Magnettebd = Vector(undef, length(realsweeplist))
+Maxbonddim = Vector(undef, length(realsweeplist))
+#####evolv
+update = mps_random_debut
+for i in eachindex(realsweeplist)
+    println("Time evolution with tebd")
+    update = tebdstepHeisenbergRow!(i, update, h, δτ, cutoff, Dmax)
+    #Maxbonddim[i] = maxbonddim(update)
+    metadata["maximum bond dimension"] = Maxbonddim
 
-json_path = joinpath(@__DIR__,"..", "analyse_simulations_julia", "data.json")
+    #####measure
+    println("Measure average energy")
+    _, e = energyagainstsite(update, h, gammescale)
+    Energyetbd[i] = mean(e)
+    results["energy sweep list"] = Energytebd
+
+    println("Mesure average magnet")
+    _, magnet = magnetagainstsite(update, j, gammescale)
+    Magnettebd[i] = mean(magnet)
+    results["magnetization sweep list"] = Magnettebd
+
+    #####data saving
+    output_data = merge(metadata, results)
+    savefile = get_savefile(output_data)
+    open(savefile, "w") do io
+        JSON.print(io, output_data, 4)
+    end
+    println("\nResults saved in $savefile")
+    flush(stdout)
+end
 
 open(json_path, "w") do io
     write(io, JSON.json(simulation, 2))
