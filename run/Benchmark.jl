@@ -74,7 +74,7 @@ function void()
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
         update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
-        push!(Maxbonddim,maxbonddim(update))
+        push!(Maxbonddim,maxbonddim(update_tebd))
         metadata["maximum bond dimension"] = Maxbonddim
 
         #####measure
