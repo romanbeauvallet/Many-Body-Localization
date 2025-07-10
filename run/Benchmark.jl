@@ -69,32 +69,35 @@ Energyetbd = Vector(undef, length(realsweeplist))
 Magnettebd = Vector(undef, length(realsweeplist))
 Maxbonddim = Vector(undef, length(realsweeplist))
 #####evolv
-update_tebd = deepcopy(mps_random_debut)
-for i in eachindex(realsweeplist)
-    println("Time evolution with tebd")
-    update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
-    #Maxbonddim[i] = maxbonddim(update)
-    metadata["maximum bond dimension"] = Maxbonddim
+function void()
+    update_tebd = deepcopy(mps_random_debut)
+    for i in eachindex(realsweeplist)
+        println("Time evolution with tebd")
+        update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
+        #Maxbonddim[i] = maxbonddim(update)
+        metadata["maximum bond dimension"] = Maxbonddim
 
-    #####measure
-    println("Measure average energy")
-    _, e = energyagainstsite(update_tebd, h, gammescale)
-    Energytebd[i] = mean(e)
-    results["energy sweep list"] = Energytebd
+        #####measure
+        println("Measure average energy")
+        _, e = energyagainstsite(update_tebd, h, gammescale)
+        Energytebd[i] = mean(e)
+        results["energy sweep list"] = Energytebd
 
-    println("Mesure average magnet")
-    _, magnet = magnetagainstsite(update_tebd, j, gammescale)
-    Magnettebd[i] = mean(magnet)
-    results["magnetization sweep list"] = Magnettebd
+        println("Mesure average magnet")
+        _, magnet = magnetagainstsite(update_tebd, j, gammescale)
+        Magnettebd[i] = mean(magnet)
+        results["magnetization sweep list"] = Magnettebd
 
-    #####data saving
-    output_data = merge(metadata, results)
-    savefile = get_savefile(output_data)
-    open(savefile, "w") do io
-        JSON.print(io, output_data, 4)
+        #####data saving
+        output_data = merge(metadata, results)
+        savefile = get_savefile(output_data)
+        open(savefile, "w") do io
+            JSON.print(io, output_data, 4)
+        end
+        println("\nResults saved in $savefile")
+        flush(stdout)
     end
-    println("\nResults saved in $savefile")
-    flush(stdout)
 end
 
+void()
 println("simulation finie")
