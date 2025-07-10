@@ -9,6 +9,7 @@ using JSON
 using Statistics
 using Dates
 using LinearAlgebra
+using Pkg
 # ===================== log
 println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
 println("Julia $VERSION")
