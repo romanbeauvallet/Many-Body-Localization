@@ -217,12 +217,8 @@ function maxbonddim(mps)
         if s === nothing
             continue
         end
-        dim = dim(s)
-        maxdim = max(maxdim, dim)
+        maxdim = max(maxdim, dim(s))
     end
     return maxdim
 end
 
-mps, s = neelstate(20)
-
-maxbonddim(mps)
