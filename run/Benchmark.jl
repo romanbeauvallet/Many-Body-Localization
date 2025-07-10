@@ -4,7 +4,6 @@ push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 using MBL
 using MKL
 using ProgressMeter
-using Plots
 using JSON
 using Statistics
 using Dates
@@ -55,7 +54,7 @@ metadata = Dict(
     "Dmax" => Dmax,
     "J" => J,
     "cutoff" => cutoff,
-    "sweep range" => sweep_list, 
+    "sweep range" => sweep_list,
     "maximum bond dimension" => nothing
 )
 println("\nmetadata:")

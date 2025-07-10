@@ -4,7 +4,6 @@ push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 using ITensors
 using MBL
 using ProgressMeter
-using Plots
 using Statistics
 ############### Functions ################
 
