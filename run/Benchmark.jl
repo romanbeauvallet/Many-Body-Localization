@@ -59,6 +59,7 @@ metadata = Dict{String,Any}(
     "axis spin" => j,
     "cutoff" => cutoff,
     "sweep range" => sweep_list,
+    "effective sweep list" => realsweeplist,
     "maximum bond dimension per tebd step" => nothing
 )
 println("\nmetadata:")
