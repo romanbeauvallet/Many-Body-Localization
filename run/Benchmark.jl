@@ -90,7 +90,7 @@ function void()
 
         #####data saving
         output_data = merge(metadata, results)
-        savefile = get_savefile(output_data)
+        #savefile = get_savefile(output_data)
         open(savefile, "w") do io
             JSON.print(io, output_data, 4)
         end
