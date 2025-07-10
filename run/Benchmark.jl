@@ -30,7 +30,7 @@ input_data = JSON.parsefile(json_input)
 map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
 N = input_data["N"]
-J = input_data["N"]
+J = input_data["J"]
 D0 = input_data["D0"]
 h = input_data["disorder"]
 δτ = input_data["Trotter-Suzuki step"]
@@ -51,8 +51,12 @@ mps_random_debut, _ = random_initialized_MPS(N, D0)
 # ===================== data 
 
 metadata = Dict{String,Any}(
+    "N" => N,
+    "Trotter-Suzuki time step" => δτ,
+    "initial bond dimension" => D0,
     "Dmax" => Dmax,
     "J" => J,
+    "axis spin" => j,
     "cutoff" => cutoff,
     "sweep range" => sweep_list,
     "maximum bond dimension" => nothing
