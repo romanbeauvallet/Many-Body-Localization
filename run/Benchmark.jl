@@ -65,7 +65,7 @@ results = Dict(
     "magnetization sweep list" => nothing,
 )
 
-Energyetbd = Vector(undef, length(realsweeplist))
+Energytebd = Vector(undef, length(realsweeplist))
 Magnettebd = Vector(undef, length(realsweeplist))
 Maxbonddim = Vector(undef, length(realsweeplist))
 #####evolv
