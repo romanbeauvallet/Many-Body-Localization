@@ -6,7 +6,7 @@ using ProgressMeter
 using Plots
 
 ################# Parameters ###############
-N = 100
+N = 20
 J = 1
 h = 0
 δτ = 1e-3
@@ -22,7 +22,7 @@ mps_random_debut, _ = random_initialized_MPS(N, D0)
 gammelength = (div(N, 10), N)
 gammescale = 0.5
 j = "z"
-gammesweep = (1000, 3000, 500) #(start, stop, step)
+gammesweep = (200, 500, 50) #(start, stop, step)
 
 xdata, ydata, bondim = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
 
