@@ -70,7 +70,7 @@ function void()
     global update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
-        global update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
+        global update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h, δτ, cutoff, Dmax)
         push!(Maxbonddim,maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
