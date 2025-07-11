@@ -17,30 +17,22 @@ println("Julia $VERSION")
 @show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
 # ===================== parameters
-if length(ARGS) < 1
-    println("Missing input file: use default")
-    throw(ErrorException)
-else
-    json_input = String(ARGS[1])
-end
+N = 20
+J = 1
+h = 0
+δτ = 1e-3
+D0 = 10
+site_measure = div(N, 2)
+n_sweep = 100
+cutoff = 1e-15
+Dmax = 300
+Beta = n_sweep * δτ
 
-println("\nLoad input parameters from file $json_input")
-
-input_data = JSON.parsefile(json_input)
-map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
-
-N = input_data["N"]
-J = input_data["J"]
-D0 = input_data["D0"]
-h = input_data["disorder"]
-δτ = input_data["Trotter-Suzuki step"]
-Dmax = input_data["max bond dimension"]
-gammesweep = input_data["nsweep range"]
-gammescale = input_data["gammescale"]
-cutoff = input_data["cutoff"]
-n_sweep = input_data["fixed number of sweep"]
-j = input_data["axis"]
-savefile = String(input_data["savefile"])
+################# Scaling ################
+gammelength = (div(N, 10), N)
+gammescale = 0.5
+j = "z"
+gammesweep = (1000, 3000, 500) #(start, stop, step)
 
 ################# Run ###############
 sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
