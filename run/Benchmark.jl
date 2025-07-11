@@ -17,7 +17,7 @@ println("Julia $VERSION")
 @show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
 # ===================== parameters
-N = 20
+N = 100
 J = 1
 h = 0
 δτ = 1e-3
@@ -67,10 +67,10 @@ Magnettebd = Vector()
 Maxbonddim = Vector()
 #####evolv
 function void()
-    update_tebd = deepcopy(mps_random_debut)
+    global update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
-        update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
+        global update_tebd = tebdstepHeisenbergRow!(i, update_tebd, h, δτ, cutoff, Dmax)
         push!(Maxbonddim,maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
@@ -84,17 +84,19 @@ function void()
         _, magnet = magnetagainstsite(update_tebd, j, gammescale)
         push!(Magnettebd, mean(magnet))
         results["magnetization sweep list"] = Magnettebd
-
-        #####data saving
-        output_data = merge(metadata, results)
-        #savefile = get_savefile(output_data)
-        open(savefile, "w") do io
-            JSON.print(io, output_data, 4)
-        end
-        println("\nResults saved in $savefile")
-        flush(stdout)
     end
 end
 
 void()
+
+#####data saving
+json_path = joinpath(@__DIR__, "..", "analyse_simulations_julia", "data.json")
+
+output_data = merge(metadata, results)
+#savefile = get_savefile(output_data)
+open(json_path, "w") do io
+    JSON.print(io, output_data, 4)
+end
+println("\nResults saved in $json_path")
+flush(stdout)
 println("simulation finie")
