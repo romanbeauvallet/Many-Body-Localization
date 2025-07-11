@@ -24,8 +24,9 @@ gammescale = 0.5
 j = "z"
 gammesweep = (1000, 3000, 500) #(start, stop, step)
 
-xdata, ydata = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
+xdata, ydata, bondim = MBL.energyaverageagainstsweep(mps_random_debut, gammesweep, gammescale, cutoff, Dmax, δτ, h)
 
 gr()
 
 scatter(xdata, ydata, xlabel="tebd sweep number", ylabel="<ϵ> on $gammescale sites of $N sites", title="init with random mps")
+scatter!(xdata, bondim, xlabel="tebd sweep number", ylabel = "maximum bond dimension of the mps")

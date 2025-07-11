@@ -112,16 +112,18 @@ function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutof
     realsweeplist[1] = gammesweep[1]
     #@show realsweeplist
     meanvalues = Vector(undef, length(sweeplist))
+    dimlist = Vector(undef, length(sweeplist))
     update = mps_init_sweep
     #@show update
     for p in eachindex(realsweeplist)
         @show p, sweeplist[p]
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax)
+        dimlist[p] = maxbonddim(update)
         _, magnet = energyagainstsite(update, h, gammescale)
         #@show magnet
         meanvalues[p] = mean(magnet)
     end
-    return sweeplist, meanvalues
+    return sweeplist, meanvalues, dimlist
 end
 
 """
@@ -138,4 +140,24 @@ function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep,
         averageenergy[i] = mean(averageenergytemp)
     end
     return sites, averageenergy
+end
+
+"""
+return the max bond dimension in the mps
+
+Working with only one type for mps
+"""
+function maxbonddim(mps)
+    maxdim = 0
+    #@show typeof(mps)
+    for i in 1:(length(mps) - 1)
+        #@show i
+        s = commonind(mps[i], mps[i+1])
+        #@show s
+        if s === nothing
+            continue
+        end
+        maxdim = max(maxdim, dim(s))
+    end
+    return maxdim
 end
