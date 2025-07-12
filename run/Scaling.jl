@@ -76,7 +76,7 @@ Magnettebd = Vector()
 function void()
     if init == "neel"
         for i in eachindex(lengthlist)
-            mpsinit = neelstate(lengthlist[i])
+            mpsinit, _ = neelstate(lengthlist[i])
             println("Time evolution with tebd")
             update_tebd = tebdstepHeisenbergRow!(n_sweep, mpsinit, h, δτ, cutoff, Dmax)
             push!(Maxbonddim, maxbonddim(update_tebd))
@@ -104,7 +104,7 @@ function void()
         end
     elseif init =="random"
         for i in eachindex(lengthlist)
-            mpsinit = random_initialized_MPS(lengthlist[i], D0)
+            mpsinit, _ = random_initialized_MPS(lengthlist[i], D0)
             println("Time evolution with tebd")
             update_tebd = tebdstepHeisenbergRow!(n_sweep, mpsinit, h, δτ, cutoff, Dmax)
             push!(Maxbonddim, maxbonddim(update_tebd))
