@@ -31,6 +31,3 @@ mps, _ = neelstate(N)
 update =tebdstepHeisenbergRow!(3000, mps, 0, 1e-3, 1e-15, 200)
 @show energyagainstsite(update, 0, 0.5)
 
-s = ITensors.siteinds("S=1/2", N; conserve_qns=true)
-rho = MPO(s, "Id") ./ √2
-@show rho

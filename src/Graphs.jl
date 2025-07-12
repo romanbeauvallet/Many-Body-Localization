@@ -141,7 +141,7 @@ end
 return the average energy (over gammescale*length spins) for a fixed number of tebd steps but with different length of mps
 """
 function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep, cutoff, Dmax, D0, δτ, h)
-    sites = collect(gammelength[1]:1:gammelength[2])
+    sites = collect(gammelength[1]:gammelength[3]:gammelength[2])
     averageenergy = Vector(undef, length(sites))
     @showprogress for i in eachindex(sites)
         @show i, sites[i]
