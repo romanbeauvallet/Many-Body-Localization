@@ -5,13 +5,14 @@ using ITensors
 using MBL
 using ProgressMeter
 using Plots
+using ITensorMPS
 
 using Base.Threads
 println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 10
+N = 50
 J = 1
 h = 0
 δτ = 1e-3
@@ -27,13 +28,9 @@ gammescale = 1
 mpsrandom, _ = random_initialized_MPS(N, D0)
 mps, _ = neelstate(N)
 
-@show energysite(mpsrandom, 5, 0)
-@show correlationSpinoperator(mpsrandom, 5, 8, "y")
-@show correlationonlength(mpsrandom, 3, "z")
-@show correlationagainstsite(mpsrandom, "z")
+update =tebdstepHeisenbergRow!(3000, mps, 0, 1e-3, 1e-15, 200)
+@show energyagainstsite(update, 0, 0.5)
 
-#@show mps
-#@show typeof(mps)
-#@show typeof(mps[1])
-#update = tebdstepHeisenbergRow!(100, mps, 0, 1e-3, 1e-12, 200)
-#@show update
+s = ITensors.siteinds("S=1/2", N; conserve_qns=true)
+rho = MPO(s, "Id") ./ √2
+@show rho

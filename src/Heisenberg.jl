@@ -29,6 +29,21 @@ N -- number of sites
 J -- coupling constant
 h -- disorder constant
 
+Define the operator expτ(-JSS - hSz)
+"""
+function ITensors.op(::OpName"exp-τXY", ::SiteType"S=1/2", s1::Index, s2::Index; τ, h)
+    H =
+        1 / 2 * op("S+", s1) * op("S-", s2) +
+        1 / 2 * op("S-", s1) * op("S+", s2) +
+        h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
+    return exp(-τ * H)
+end
+
+"""
+N -- number of sites 
+J -- coupling constant
+h -- disorder constant
+
 return the Trotter Suzuki gates (order 2) and the Hamiltonian to compute TEBD and energy
 """
 function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l'autre contraction où on fait pair impair à la suite au lieu de tout pair puis impair
@@ -53,12 +68,23 @@ function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l
 end
 
 """
-return the vector of Trotter Suzuki gates in a row that means gates are in the order: (1,2) ; (2,3) ; ...
+return the vector of Trotter Suzuki gates for Heinsenberg model in a row that means gates are in the order: (1,2) ; (2,3) ; ...
 """
 function gateTrotterSuzukirow(mps, h, δτ)
     N = length(mps)
     s = siteinds(mps)
     gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+    append!(gates, reverse(gates))
+    return gates
+end
+
+"""
+return the vector of Trotter Suzuki gates for XY model in a row that means gates are in the order: (1,2) ; (2,3) ; ...
+"""
+function gateTrotterSuzukirowXY(mps, h, δτ)
+    N = length(mps)
+    s = siteinds(mps)
+    gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
     append!(gates, reverse(gates))
     return gates
 end

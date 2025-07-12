@@ -50,7 +50,7 @@ function section_trunc(N, scale)
 end
 
 """
-
+return the list of correlation function on the whole chain with the two boundaries excluded
 """
 function correlationagainstsite(mps, j)
     N= length(mps)

@@ -40,14 +40,18 @@ gammescale = input_data["gammescale"]
 cutoff = input_data["cutoff"]
 n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
+init = input_data["initialization"]
 savefile = String(input_data["savefile"])
 
 ################# Run ###############
 sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
 realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
 realsweeplist[1] = gammesweep[1]
-mps_random_debut, _ = random_initialized_MPS(N, D0)
-
+if init == "random"
+    mps_random_debut, _ = random_initialized_MPS(N, D0)
+elseif init == "neel"
+    mps_random_debut, _ = neelstate(N)
+end
 # ===================== data 
 
 metadata = Dict{String,Any}(
@@ -62,7 +66,8 @@ metadata = Dict{String,Any}(
     "proportion spin average" => gammescale,
     "sweep range" => sweep_list,
     "effective sweep list" => realsweeplist,
-    "maximum bond dimension per tebd step" => nothing
+    "maximum bond dimension per tebd step" => nothing,
+    "type d'initialisation" => init
 )
 println("\nmetadata:")
 display(metadata)
