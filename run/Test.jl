@@ -28,7 +28,8 @@ mpsrandom, _ = random_initialized_MPS(N, D0)
 mps, _ = neelstate(N)
 
 @show energysite(mpsrandom, 5, 0)
-@show correlationSpinoperator(mpsrandom, 5, 8, "z")
+@show correlationSpinoperator(mpsrandom, 5, 8, "y")
+@show correlationonlength(mpsrandom, 3, "z")
 
 @show mps
 @show typeof(mps)

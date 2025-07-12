@@ -5,7 +5,7 @@ using ITensors
 using ITensorMPS
 using LinearAlgebra
 using ProgressMeter
-
+using Statistics
 ################## Functions #####################
 
 """
@@ -228,7 +228,7 @@ p -- the other site, the distance between the two sites is p-n+1
 
 return the correlation function
 """
-function correlationSpinoperator(mps, n, p, j)
+function correlationSpinoperatorwrong(mps, n, p, j)
     copy = orthogonalize(mps, n)
     sn = siteind(copy, n)
     sp = siteind(copy, p)
@@ -251,4 +251,56 @@ function correlationSpinoperator(mps, n, p, j)
         psi_np = apply(S_p, psi_n; site=p)
         return inner(copy, psi_np)
     end
+end
+
+"""
+j -- axis of the spin operator 
+n -- starting site
+p -- the other site, the distance between the two sites is p-n+1
+
+return the correlation function
+"""
+function correlationSpinoperator(mps, n, p, j)
+    copy = orthogonalize(mps, n)
+    sn = siteind(copy, n)
+    sp = siteind(copy, p)
+    if j == "z"
+        S_n = op("Sz", sn)
+        S_p = op("Sz", sp)
+        gate = S_n * S_p
+        psi_np = apply(gate, copy)
+        return inner(copy, psi_np)
+    elseif j == "x"
+        S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
+        S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
+        gate = S_n * S_p
+        psi_np = apply(gate, copy)
+        return inner(copy, psi_np)
+    elseif j == "y"
+        S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
+        S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
+        gate = S_n * S_p
+        psi_np = apply(gate, copy)
+        return real(inner(copy, psi_np))
+    end
+end
+
+"""
+k -- length of the segment 
+j -- axis against sprin is measured
+
+th two boundary of the chain are excluded
+
+return the correlation function over
+"""
+function correlationonlength(mps, k, j)
+    N = length(mps)
+    if k > N - 2
+        return "mps is not long enough"
+    end
+    Listintercorrel = Vector{}(undef, N - k - 2)
+    for i in 2:1:N-k-1
+        Listintercorrel[i-1] = correlationSpinoperator(mps, i, i + k, j)
+    end
+    return mean(Listintercorrel)
 end

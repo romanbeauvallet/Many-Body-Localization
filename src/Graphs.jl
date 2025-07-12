@@ -49,6 +49,19 @@ function section_trunc(N, scale)
     return be, st
 end
 
+"""
+
+"""
+function correlationagainstsite(mps, j)
+    N= length(mps)
+    lengthlist = collect(1:1:N-2)
+    Correlation = Vector{}(undef, length(lengthlist))
+    for p in eachindex(lengthlist)
+        Correlation[p] = correlationonlength(mps, lengthlist[p], j)
+    end
+    return lengthlist, Correlation
+end
+
 ############################ Tracer ############################
 
 """
@@ -138,3 +151,4 @@ function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep,
     end
     return sites, averageenergy
 end
+
