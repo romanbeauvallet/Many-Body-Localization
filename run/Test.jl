@@ -29,3 +29,7 @@ mps = neelstate(N)
 
 @show mps
 @show typeof(mps)
+@show typeof(mps[1])
+realmps = mps[1]
+update = tebdstepHeisenbergRow!(100, realmps, 0, 1e-3, 1e-12, 200)
+@show update
