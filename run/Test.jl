@@ -21,15 +21,17 @@ n_sweep = 1000
 cutoff = 1e-15
 Dmax = 300
 Beta = n_sweep * δτ
-gammescale=1
+gammescale = 1
 
 ################# try to add quantum number conservation
+mpsrandom, _ = random_initialized_MPS(N, D0)
+mps, _ = neelstate(N)
 
-mps = neelstate(N)
+@show energysite(mpsrandom, 5, 0)
+@show correlationSpinoperator(mpsrandom, 5, 8, "z")
 
 @show mps
 @show typeof(mps)
 @show typeof(mps[1])
-realmps = mps[1]
-update = tebdstepHeisenbergRow!(100, realmps, 0, 1e-3, 1e-12, 200)
+update = tebdstepHeisenbergRow!(100, mps, 0, 1e-3, 1e-12, 200)
 @show update

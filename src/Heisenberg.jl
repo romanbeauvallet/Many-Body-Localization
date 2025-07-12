@@ -19,8 +19,8 @@ function ITensors.op(::OpName"exp-τSS", ::SiteType"S=1/2", s1::Index, s2::Index
     H =
         1 / 2 * op("S+", s1) * op("S-", s2) +
         1 / 2 * op("S-", s1) * op("S+", s2) +
-    op("Sz", s1) * op("Sz", s2) +
-    h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
+        op("Sz", s1) * op("Sz", s2) +
+        h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
     return exp(-τ * H)
 end
 
@@ -76,7 +76,7 @@ function hamiltonianHeisenberg(mps, h)
     for j in 1:N-1
         add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
         add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
-        add!(ampo, 1 , "Sz", j, "Sz", j + 1)
+        add!(ampo, 1, "Sz", j, "Sz", j + 1)
         add!(ampo, h, "Sz", j)
     end
     add!(ampo, h, "Sz", N)
@@ -98,7 +98,7 @@ n -- site measure
 return the Sz value on the site n 
 """
 function measure_S(psi::MPS, n, j::String)
-    string = "S"*j
+    string = "S" * j
     psicopy = orthogonalize(psi, n)
     sn = siteind(psicopy, n)
     Sz = scalar(dag(prime(psicopy[n], "Site")) * op(string, sn) * psicopy[n])
@@ -182,8 +182,8 @@ function energysite(mps, sitemeasure, h)
     gate =
         1 / 2 * op("S+", sn) * op("S-", snn) +
         1 / 2 * op("S-", sn) * op("S+", snn) +
-    op("Sz", sn) * op("Sz", snn) +
-    h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+        op("Sz", sn) * op("Sz", snn) +
+        h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
     e = scalar(dag(prime(inter, "Site")) * gate * inter)
@@ -205,12 +205,11 @@ end
 """
 return the max bond dimension in the mps
 
-ATTENTION NOT WORKING 
 """
 function maxbonddim(mps)
     maxdim = 0
     #@show typeof(mps)
-    for i in 1:(length(mps) - 1)
+    for i in 1:(length(mps)-1)
         #@show i
         s = commonind(mps[i], mps[i+1])
         #@show s
@@ -220,4 +219,36 @@ function maxbonddim(mps)
         maxdim = max(maxdim, dim(s))
     end
     return maxdim
+end
+
+"""
+j -- axis of the spin operator 
+n -- starting site
+p -- the other site, the distance between the two sites is p-n+1
+
+return the correlation function
+"""
+function correlationSpinoperator(mps, n, p, j)
+    copy = orthogonalize(mps, n)
+    sn = siteind(copy, n)
+    sp = siteind(copy, p)
+    if j == "z"
+        S_n = op("Sz", sn)
+        S_p = op("Sz", sp)
+        psi_n = apply(S_n, copy; site=n)
+        psi_np = apply(S_p, psi_n; site=p)
+        return inner(copy, psi_np)
+    elseif j == "x"
+        S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
+        S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
+        psi_n = apply(S_n, copy; site=n)
+        psi_np = apply(S_p, psi_n; site=p)
+        return inner(copy, psi_np)
+    elseif j == "y"
+        S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
+        S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
+        psi_n = apply(S_n, copy; site=n)
+        psi_np = apply(S_p, psi_n; site=p)
+        return inner(copy, psi_np)
+    end
 end

@@ -7,4 +7,5 @@ export gateTrotterSuzukiandhamiltonian, measure_H, random_initialized_MPS, tebds
 export tebdstepHeisenbergRow!, gateTrotterSuzukirow
 export magnetagainstsite, energyagainstdeltatime, energyagainstsite
 export maxbonddim
+export correlationSpinoperator
 end # module MBL

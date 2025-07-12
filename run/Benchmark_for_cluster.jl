@@ -58,6 +58,8 @@ metadata = Dict{String,Any}(
     "J" => J,
     "axis spin" => j,
     "cutoff" => cutoff,
+    "disorder" => h,
+    "proportion spin average" => gammescale,
     "sweep range" => sweep_list,
     "effective sweep list" => realsweeplist,
     "maximum bond dimension per tebd step" => nothing
@@ -79,7 +81,7 @@ function void()
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
         update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h, δτ, cutoff, Dmax)
-        push!(Maxbonddim,maxbonddim(update_tebd))
+        push!(Maxbonddim, maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
         #####measure
