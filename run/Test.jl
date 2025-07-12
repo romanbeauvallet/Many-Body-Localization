@@ -30,9 +30,10 @@ mps, _ = neelstate(N)
 @show energysite(mpsrandom, 5, 0)
 @show correlationSpinoperator(mpsrandom, 5, 8, "y")
 @show correlationonlength(mpsrandom, 3, "z")
+@show correlationagainstsite(mpsrandom, "z")
 
-@show mps
-@show typeof(mps)
-@show typeof(mps[1])
-update = tebdstepHeisenbergRow!(100, mps, 0, 1e-3, 1e-12, 200)
-@show update
+#@show mps
+#@show typeof(mps)
+#@show typeof(mps[1])
+#update = tebdstepHeisenbergRow!(100, mps, 0, 1e-3, 1e-12, 200)
+#@show update

@@ -269,13 +269,13 @@ function correlationSpinoperator(mps, n, p, j)
         S_p = op("Sz", sp)
         gate = S_n * S_p
         psi_np = apply(gate, copy)
-        return inner(copy, psi_np)
+        return real(inner(copy, psi_np))
     elseif j == "x"
         S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
         S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
         gate = S_n * S_p
         psi_np = apply(gate, copy)
-        return inner(copy, psi_np)
+        return real(inner(copy, psi_np))
     elseif j == "y"
         S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
         S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
@@ -298,8 +298,9 @@ function correlationonlength(mps, k, j)
     if k > N - 2
         return "mps is not long enough"
     end
-    Listintercorrel = Vector{}(undef, N - k - 2)
-    for i in 2:1:N-k-1
+    Listintercorrel = Vector{Float64}(undef, max(1, N - k - 2)) #car quand k = N-2 on veut quand même une valeur de correlation
+    for i in 2:1:max(N - k - 1, 2) #car quand k = N-2 on a quand meme un point pour calculer la correlation
+        #@show correlationSpinoperator(mps, i, i + k, j)
         Listintercorrel[i-1] = correlationSpinoperator(mps, i, i + k, j)
     end
     return mean(Listintercorrel)

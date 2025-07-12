@@ -55,8 +55,9 @@ end
 function correlationagainstsite(mps, j)
     N= length(mps)
     lengthlist = collect(1:1:N-2)
-    Correlation = Vector{}(undef, length(lengthlist))
+    Correlation = Vector{Float64}(undef, length(lengthlist))
     for p in eachindex(lengthlist)
+        @show correlationonlength(mps, lengthlist[p], j)
         Correlation[p] = correlationonlength(mps, lengthlist[p], j)
     end
     return lengthlist, Correlation
