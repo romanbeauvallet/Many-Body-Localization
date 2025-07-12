@@ -54,12 +54,10 @@ metadata = Dict{String,Any}(
     "Dmax" => Dmax,
     "J" => J,
     "axis spin" => j,
-    "gammelength" => gammelength,
+    "length list" => lengthlist,
     "cutoff" => cutoff,
     "disorder" => h,
     "proportion spin average" => gammescale,
-    "sweep range" => sweep_list,
-    "effective sweep list" => realsweeplist,
     "maximum bond dimension per tebd step" => nothing,
     "type d'initialisation" => init
 )
