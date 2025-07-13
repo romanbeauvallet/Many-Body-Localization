@@ -35,12 +35,8 @@ D0 = input_data["D0"]
 h = input_data["disorder"]
 δτ = input_data["Trotter-Suzuki step"]
 Dmax = input_data["max bond dimension"]
-gammesweep = input_data["nsweep range"]
-gammescale = input_data["gammescale"]
 cutoff = input_data["cutoff"]
 n_sweep = input_data["fixed number of sweep"]
-j = input_data["axis"]
-init = input_data["initialization"]
 savefile = String(input_data["savefile"])
 
 ################# Run ###############
