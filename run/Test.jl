@@ -12,22 +12,25 @@ println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 50
+N = 100
 J = 1
 h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 1000
+n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
 Beta = n_sweep * δτ
-gammescale = 1
+gammescale = 0.6
+j = "z"
 
 ################# try to add quantum number conservation
 mpsrandom, _ = random_initialized_MPS(N, D0)
 mps, _ = neelstate(N)
 
-update =tebdstepHeisenbergRow!(3000, mps, 0, 1e-3, 1e-15, 200)
-@show energyagainstsite(update, 0, 0.5)
+update = tebdstepHeisenbergRow!(n_sweep, mpsrandom, h, δτ, cutoff, Dmax)
+xdata, ydata = correlationagainstsite(update, j)
 
+gr()
+scatter(xdata, abs.(ydata))

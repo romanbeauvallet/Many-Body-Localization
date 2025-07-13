@@ -102,7 +102,7 @@ function void()
             println("\nResults saved in $savefile")
             flush(stdout)
         end
-    elseif init =="random"
+    elseif init == "random"
         for i in eachindex(lengthlist)
             mpsinit, _ = random_initialized_MPS(lengthlist[i], D0)
             println("Time evolution with tebd")
