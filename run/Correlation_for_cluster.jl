@@ -40,8 +40,8 @@ n_sweep = input_data["fixed number of sweep"]
 savefile = String(input_data["savefile"])
 
 ################# Run ###############
-mpsdebutrandom = random_initialized_MPS(N, D0)
-mpsneel = neelstate(N)
+mpsdebutrandom, _ = random_initialized_MPS(N, D0)
+mpsneel, _ = neelstate(N)
 # ===================== data 
 
 metadata = Dict{String,Any}(
