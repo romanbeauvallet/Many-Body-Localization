@@ -7,6 +7,7 @@ using LinearAlgebra
 using ProgressMeter
 using Statistics
 using ITensors: Index, QN, Out, In, dag
+using Printf
 
 ################## Functions #####################
 
@@ -49,25 +50,31 @@ end
 """
 
 """
-function gatesTEBDancilla(ancilla, h, δτ, s)
+function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)
-    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
-    append!(gates, reverse(gates))
-    return gates
+    if op=="XY"
+        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        append!(gates, reverse(gates))
+        return gates
+    elseif op=="SS"
+        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        append!(gates, reverse(gates))
+        return gates
+    end
 end
 
 
 """
-
+compute et return the energy 
 """
-function EnergyAncilla(ancilla, δτ, h, beta, s, cutoff)
-    gates = gatesTEBDancilla(ancilla, h, δτ, s)
+function EnergyAncilla(ancilla, δτ, h, beta, s, cutoff, op)
+    gates = gatesTEBDancilla(ancilla, h, δτ, s, op)
     H = hamiltonianHeisenberg(ancilla, h, s)
-    for β in 0:δτ:beta
-        energy = inner(ancilla, H)
-        println("β = %.2f energy = %.8f\n", β, energy)
+    for β in 0: δτ:beta
         ancilla = apply(gates, ancilla; cutoff)
-        ancilla = rho / tr(rho)
+        #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
+        ancilla = ancilla / tr(ancilla)
   end
-
+  energyancilla = inner(ancilla, H)
+  return ancilla, energyancilla
 end

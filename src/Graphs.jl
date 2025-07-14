@@ -63,7 +63,7 @@ function correlationagainstsite(mps, j)
     return lengthlist, Correlation
 end
 
-############################ Tracer ############################
+############################ Tracer ground state ############################
 
 """
 return the energy list of the site i with respect to gates time step
@@ -153,3 +153,13 @@ function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep,
     return sites, averageenergy
 end
 
+##################### Tracer Finite Temperature #################
+
+function energyforbetalist(betamax, step, ancilla, δτ, h, beta, s, cutoff, op)
+    betalist = collect(0:step:betamax)
+    Energylist=Vector{}(undef, length(betalist))
+    for i in eachindex(betalist)
+        Energylist[i] = MBL.EnergyAncilla(ancilla, δτ, h, beta, s, cutoff, op)
+    end
+    return betalist, EnergyList
+end

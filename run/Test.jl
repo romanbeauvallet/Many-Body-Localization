@@ -21,6 +21,7 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
+beta = 1
 Beta = n_sweep * δτ
 gammescale = 0.6
 j = "z"
@@ -29,5 +30,7 @@ j = "z"
 test, s = MBL.AncillaMPO(N)
 @show typeof(test)
 @show length(test)
-gates= MBL.gatesTEBDancilla(test, 0, 1e-2, s)
+gates= MBL.gatesTEBDancilla(test, 0, 1e-2, s, "SS")
 @show typeof(gates)
+_, Energytry = MBL.EnergyAncilla(test, δτ, h, beta, s, cutoff, "SS")
+@show Energytry
