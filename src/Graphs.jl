@@ -157,7 +157,7 @@ end
 
 function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
-    realbetalist= diff(betalist)
+    realbetalist= reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
     H = hamiltonianHeisenberg(ancilla, h, s)
     update = ancilla

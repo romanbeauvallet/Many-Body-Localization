@@ -8,7 +8,7 @@ using ProgressMeter
 using Statistics
 using ITensors: Index, QN, Out, In, dag
 using Printf
-
+using QuadGK
 ################## Functions #####################
 
 """
@@ -79,4 +79,17 @@ end
 
 function energyMPO(ancilla, H)
     return inner(ancilla, H)
+end
+
+"""
+exact energy at temperature beta for XY model
+
+"""
+function exactenergyXY(β, h, γ)
+    function ε(k, h, γ)
+        return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
+    end
+    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2π)
+    val, _ = quadgk(integrand, -π, π, rtol=1e-9)
+    return -val
 end
