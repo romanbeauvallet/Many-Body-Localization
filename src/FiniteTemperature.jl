@@ -65,16 +65,18 @@ end
 
 
 """
-compute et return the energy 
+
 """
-function EnergyAncilla(ancilla, δτ, h, beta, s, cutoff, op)
+function TEBDancilla(ancilla, δτ, h, beta, s, cutoff, op)
     gates = gatesTEBDancilla(ancilla, h, δτ, s, op)
-    H = hamiltonianHeisenberg(ancilla, h, s)
     for β in 0: δτ:beta
         ancilla = apply(gates, ancilla; cutoff)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
   end
-  energyancilla = inner(ancilla, H)
-  return ancilla, energyancilla
+  return ancilla
+end
+
+function energyMPO(ancilla, H)
+    return inner(ancilla, H)
 end

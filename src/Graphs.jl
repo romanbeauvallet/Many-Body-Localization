@@ -155,11 +155,16 @@ end
 
 ##################### Tracer Finite Temperature #################
 
-function energyforbetalist(betamax, step, ancilla, δτ, h, beta, s, cutoff, op)
+function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
-    Energylist=Vector{}(undef, length(betalist))
-    for i in eachindex(betalist)
-        Energylist[i] = MBL.EnergyAncilla(ancilla, δτ, h, beta, s, cutoff, op)
+    realbetalist= diff(betalist)
+    Energylist = Vector{}(undef, length(realbetalist))
+    H = hamiltonianHeisenberg(ancilla, h, s)
+    update = ancilla
+    @showprogress desc="compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla(update, δτ, h, realbetalist[i], s, cutoff, op)
+        Energylist[i] = MBL.energyMPO(update, H)
     end
-    return betalist, EnergyList
+    return betalist, Energylist
 end
