@@ -159,7 +159,7 @@ function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
     realbetalist= reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
-    H = hamiltonianHeisenberg(ancilla, h, s)
+    H = hamiltonianXY(ancilla, h, s)
     update = ancilla
     @showprogress desc="compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]

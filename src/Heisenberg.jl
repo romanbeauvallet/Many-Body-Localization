@@ -109,6 +109,27 @@ function hamiltonianHeisenberg(mps, h ,s)
     return H
 end
 
+
+"""
+mps -- mps on which you compute the energy
+h -- disorder
+
+return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
+"""
+function hamiltonianXY(mps, h ,s)
+    N = length(mps)
+    ampo = AutoMPO()
+    for j in 1:N-1
+        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+        add!(ampo, h, "Sz", j)
+    end
+    add!(ampo, h, "Sz", N)
+    H = MPO(ampo, s)
+    return H
+end
+
+
 """
 exact energy of the 1D Heisenberg Hamiltonian ground state
 """
