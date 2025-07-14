@@ -95,9 +95,8 @@ h -- disorder
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianHeisenberg(mps, h)
+function hamiltonianHeisenberg(mps, h ,s)
     N = length(mps)
-    s = siteinds(mps)
     ampo = AutoMPO()
     for j in 1:N-1
         add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
@@ -332,35 +331,3 @@ function correlationonlength(mps, k, j)
     return mean(Listintercorrel)
 end
 
-"""
-return an initialized ancilla of length N 
-"""
-function AncillaMPO(N)
-    s = ITensors.siteinds("S=1/2", N; conserve_qns=true)
-    rho = MPO(s, "Id") ./ √2
-    return rho
-end
-
-"""
-
-"""
-function Ancilla(N)
-    phys_sites = siteinds("S=1/2", N; conserve_qns=true)
-    aux_sites = siteinds("S=1/2", N; conserve_qns=true)
-    links = [Index(QN(), 1 => 1, "Link,l=$i") for i in 1:N+1]  # QN() = neutre
-    mps_tensors = Vector{ITensor}(undef, N)
-    for i in 1:N
-        l = links[i]
-        r = links[i+1]
-        s = phys_sites[i]
-        a = aux_sites[i]
-
-        A = ITensor(l, r, s, a)
-
-        for state in ("Up", "Dn")
-            A[l=>1, r=>1, s=>state, a=>state] = 1.0
-        end
-
-        mps_tensors[i] = A
-    end
-end

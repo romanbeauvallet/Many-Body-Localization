@@ -12,7 +12,7 @@ println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 100
+N = 10
 J = 1
 h = 0
 δτ = 1e-3
@@ -26,11 +26,8 @@ gammescale = 0.6
 j = "z"
 
 ################# try to add quantum number conservation
-mpsrandom, _ = random_initialized_MPS(N, D0)
-mps, _ = neelstate(N)
-
-update = tebdstepHeisenbergRow!(n_sweep, mpsrandom, h, δτ, cutoff, Dmax)
-xdata, ydata = correlationagainstsite(update, j)
-
-gr()
-scatter(xdata, abs.(ydata))
+test, s = MBL.AncillaMPO(N)
+@show typeof(test)
+@show length(test)
+gates= MBL.gatesTEBDancilla(test, 0, 1e-2, s)
+@show typeof(gates)
