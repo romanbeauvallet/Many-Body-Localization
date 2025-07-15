@@ -6,7 +6,7 @@ using MBL
 using ProgressMeter
 using Plots
 using ITensorMPS
-
+using Statistics
 using Base.Threads
 println("Nombre de threads disponibles : ", nthreads())
 
@@ -21,21 +21,71 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
-betamax = 5
-step = 0.5
+betamax = 10
+step = 1
 Beta = n_sweep * δτ
 gammescale = 0.6
 j = "z"
 γ=0.0
 betalist = collect(0:step:betamax)
+
+function energysitetest(mps, sitemeasure, h)
+    copy = orthogonalize(mps, sitemeasure)
+    sn = siteind(copy, sitemeasure)
+    snn = siteind(copy, sitemeasure + 1)
+    gate =
+        1 / 2 * op("S+", sn) * op("S-", snn) +
+        1 / 2 * op("S-", sn) * op("S+", snn) +
+        h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    normalize!(inter)
+    prout = replaceprime(gate, 0=>2)
+    #@show replaceprime(gate, 0=>2)
+    #@show dag(inter)
+    #@show prout*inter
+    double = replaceprime(prout*inter, 2=>1)
+    #@show scalar(double*dag(inter))
+    return real(scalar(double*dag(inter)))
+end
+
+function energyagainstsitetest(mps, h, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Energypersite = Vector(undef, length(sites))
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energysitetest(mps, sites[i], h)
+    end
+    return sites, mean(Energypersite)
+end
+
+
+function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
+    betalist = collect(0:step:betamax)
+    realbetalist= reverse(push!(diff(betalist), 0))
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    @showprogress desc="compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i], s, cutoff, op)
+        _, Energylist[i] = energyagainstsitetest(update, h, gammescale)
+    end
+    return betalist, Energylist
+end
 ################# try to add quantum number conservation
 test, s = MBL.AncillaMPO(N)
-@show siteinds(test)
-#@show energyagainstsite(test, h, gammescale)
-beta, energy = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "SS")
-exactenergy = [MBL.exactenergyXY(b, h, γ) for b in betalist]
+#@show siteinds(test)
+#@show typeof(test)
+#@show test[3]
+#@show siteind(test, 3)
+@show energysitetest(test, 4, h)
+@show energyagainstsitetest(test, h, gammescale)
+xdata, ydata = energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
+exactdata = [MBL.exactenergyXY(beta, 0,0) for beta in xdata]
 gr()
-scatter(beta, energy, ylabel="<H>/N", title="N=$N, cutoff=$cutoff, δτ=$δτ, step=$step", xlabel="β", label="tebd")
-scatter!(betalist, exactenergy, label="exact energy")
-plot!(betalist, -1 .* betalist, label="-betalist")
-#hline!([1/4-log(2)], y="exact")
+scatter(xdata, ydata)
+scatter!(xdata, -xdata/4)
+scatter!(xdata, exactdata, label="exact")

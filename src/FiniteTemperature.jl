@@ -91,5 +91,5 @@ function exactenergyXY(β, h, γ)
     end
     integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2*pi)
     val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
-    return -4*val
+    return -val
 end 
