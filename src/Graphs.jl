@@ -159,11 +159,11 @@ function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
     realbetalist= reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
-    H = hamiltonianXY(ancilla, h, s)
+    H = hamiltonianHeisenberg(ancilla, h, s)
     update = ancilla
     @showprogress desc="compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla(update, δτ, h, realbetalist[i], s, cutoff, op)
+        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i], s, cutoff, op)
         Energylist[i] = MBL.energyMPO(update, H)
     end
     return betalist, Energylist

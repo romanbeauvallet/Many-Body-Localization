@@ -67,7 +67,7 @@ end
 """
 
 """
-function TEBDancilla(ancilla, δτ, h, beta, s, cutoff, op)
+function TEBDancilla!(ancilla, δτ, h, beta, s, cutoff, op)
     gates = gatesTEBDancilla(ancilla, h, δτ, s, op)
     for β in 0: δτ:beta
         ancilla = apply(gates, ancilla; cutoff)
@@ -89,7 +89,7 @@ function exactenergyXY(β, h, γ)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end
-    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2π)
-    val, _ = quadgk(integrand, -π, π, rtol=1e-9)
-    return -val
-end
+    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2*pi)
+    val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
+    return -4*val
+end 
