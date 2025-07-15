@@ -91,11 +91,17 @@ function exactenergyXY1(β, h, γ)
     end
     integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2*pi)
     val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
-    return -4*val
+    return -val
+end 
+
+function exactenergyXY3(β)
+    integrand(k) = cos(k) * tanh(0.5*β * cos(k))
+    val, _ = quadgk(integrand, 0, pi, rtol=1e-9)
+    return -val/(2*pi)
 end 
 
 function exactenergyXY2(β)
-    integrand(k) = cos(k) * tanh(0.5 * β * cos(k))
+    integrand(k) = cos(k) * tanh(β * cos(k))
     val, _ = quadgk(integrand, 0, pi/2, rtol=1e-9)
     return -2*val/(pi)
 end 

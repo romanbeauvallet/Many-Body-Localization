@@ -12,7 +12,7 @@ println("Nombre de threads disponibles : ", nthreads())
 
 ################ Parameters ###############
 
-N = 10
+N = 20
 J = 1
 h = 0
 δτ = 1e-3
@@ -22,7 +22,7 @@ n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
 betamax = 5
-step = 0.1
+step = 0.5
 Beta = n_sweep * δτ
 gammescale = 0.8
 j = "z"
@@ -36,6 +36,7 @@ function energysitetest(mps, sitemeasure, h)
     gate =
         1 / 2 * op("S+", sn) * op("S-", snn) +
         1 / 2 * op("S-", sn) * op("S+", snn) +
+        #op("Sz", sn) * op("Sz", snn) +
         h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
@@ -86,9 +87,13 @@ xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, 
 xdataMPO, ydataMPO = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
 exacterngy1 = [MBL.exactenergyXY1(β, h, γ) for β in xdataMPO]
 exacterngy2 = [MBL.exactenergyXY2(beta) for beta in xdataMPO]
-
+exacterngy3 = [MBL.exactenergyXY3(beta) for beta in xdataMPO]
 gr()
 scatter(xdatasites, ydatadites, label="mesure par site", xlabel="β", ylabel="energy", title="model XY, N=$N, cutoff=$cutoff, δτ=$δτ")
-scatter!(xdataMPO, ydataMPO, label="mesure MPO")
-plot!(xdataMPO, exacterngy1, label="exact energy ChatGPT")
-plot!(xdataMPO, exacterngy2, label="S.Katsura exact energy")
+scatter!(xdataMPO, ydataMPO/N, label="mesure MPO")
+plot!(xdataMPO, exacterngy1, label="exact energy 1")
+plot!(xdataMPO, exacterngy2, label="exact energy 2")
+plot!(xdataMPO, exacterngy3, label="exact energy 3")
+#plot!(xdataMPO[begin:end], -xdataMPO[begin:end]/4, label="pente de 1/4")
+#plot!(xdataMPO[begin:end], -xdataMPO[begin:end], label="pente de 1")
+#hline!([1/4-log(2)], label="exact energy at zero temperature")
