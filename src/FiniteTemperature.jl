@@ -85,11 +85,17 @@ end
 exact energy at temperature beta for XY model
 
 """
-function exactenergyXY(β, h, γ)
+function exactenergyXY1(β, h, γ)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end
     integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2*pi)
     val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
-    return -val
+    return -4*val
+end 
+
+function exactenergyXY2(β)
+    integrand(k) = cos(k) * tanh(0.5 * β * cos(k))
+    val, _ = quadgk(integrand, 0, pi/2, rtol=1e-9)
+    return -2*val/(pi)
 end 

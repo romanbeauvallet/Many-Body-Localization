@@ -21,8 +21,8 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
-betamax = 10
-step = 1
+betamax = 5
+step = 0.1
 Beta = n_sweep * δτ
 gammescale = 0.6
 j = "z"
@@ -34,11 +34,11 @@ function energysitetest(mps, sitemeasure, h)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
     gate =
-        1 / 2 * op("S+", sn) * op("S-", snn) +
-        1 / 2 * op("S-", sn) * op("S+", snn) +
-        h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+        op("Sz", sn) * op("Sz", snn) 
+    return gate
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
+    @show gate
     prout = replaceprime(gate, 0=>2)
     #@show replaceprime(gate, 0=>2)
     #@show dag(inter)
@@ -82,10 +82,14 @@ test, s = MBL.AncillaMPO(N)
 #@show test[3]
 #@show siteind(test, 3)
 @show energysitetest(test, 4, h)
+
 @show energyagainstsitetest(test, h, gammescale)
 xdata, ydata = energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
-exactdata = [MBL.exactenergyXY(beta, 0,0) for beta in xdata]
+exactdata = [MBL.exactenergyXY2(beta) for beta in xdata]
 gr()
-scatter(xdata, ydata)
-scatter!(xdata, -xdata/4)
-scatter!(xdata, exactdata, label="exact")
+scatter(xdata, ydata, xlabel="β", ylabel="energie moyenne par site", title="N=$N, cutoff=$cutoff, δτ=$δτ, modèle XY", label="TEBD")
+#scatter!(xdata, -xdata/4)
+plot!(xdata, exactdata, label="exact energy")
+plot!(xdata[1:10], -xdata[1:10]/4, label="y=-x/4")
+#plot!(xdata[1:20], -J*J/4 .*xdata[1:20], label="y=-x/4")
+#hline!([1/4-log(2)], label="énergie exacte à température nulle")
