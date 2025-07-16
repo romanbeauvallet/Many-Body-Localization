@@ -150,14 +150,31 @@ function energyexact(spectre, β, L)
     return sum(spectre .* weights) / (Z * L)
 end
 
-"""
+function ITensors.op(::OpName"exp-τSSdisorder", ::SiteType"S=1/2", s1::Index, s2::Index; h)
+    H =
+        1 / 2 * op("S+", s1) * op("S-", s2) +
+        1 / 2 * op("S-", s1) * op("S+", s2) +
+        op("Sz", s1) * op("Sz", s2) +
+        h * (op("Sz", s1) * op("Id", s2) + op("Id", s1) * op("Sz", s2))
+    return H
+end
 
 """
-function evolutionwithrandomdisorder(init::Int64, ancilla, h, δτ)
+init -- integer to init the seed
+ancilla -- MPS
+"""
+function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
     rng = MersenneTwister(init)
     N = length(ancilla)
-    disorder = rand(rng, Uniform(-h, h), N-1)  # utilise ce générateur local fixé
-    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=disorder[n],)) for n in 1:1:(N-1)], s)
-    append!(gates, reverse(gates))
-    return gates
+    if h < 0
+        return "erreur, magnitude disorder has to be > 0"
+    elseif h == 0
+        disorder = [0 for i in 1:N-1]
+    elseif h > 0
+        disorder = rand(rng, Uniform(-h, h), N - 1)  # utilise ce générateur local fixé
+    end
+    gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N-1)], s)
+    gatesevolve = exp.(-δτ .* gatesmeasure)
+    append!(gatesevolve, reverse(gatesevolve))
+    return gatesmeasure, gatesevolve
 end

@@ -15,7 +15,7 @@ using JSON
 
 N = 18
 J = 1
-h = 0
+h = 1
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
@@ -36,18 +36,14 @@ input = JSON.parse(json_string)
 # ============================== DATA
 test, s = MBL.AncillaMPO(N)
 
-xdatasites, ydatadites = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "SS", gammescale)
-xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "SS")
+#xdatasites, ydatadites = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "SS", gammescale)
+#xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "SS")
 
 #exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
 
 #exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 
-gr()
-p = plot()
-scatter!(p, xdatasites, ydatadites, label="mesure par site", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model Heisenberg")
-scatter!(p, xdataMPO, ydataMPO / N, label="mesure MPO")
-#plot!(xdataMPO, exactdz, label="exact dz", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
-#plot!(p, xdataMPO, exactenergy, label=latexstring("-\\frac{1}{4π}\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"), xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
-hline!(p, [1 / 4 - log(2)], label="exact energy at zero temperature")
-display(p)
+#scatter!(p, xdatasites, ydatadites, label="mesure par site", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model Heisenberg")
+
+@show MBL.evolutionwithrandomdisorder(1234, test, s, h, δτ)[1][3]
+@show MBL.evolutionwithrandomdisorder(1234, test, s, h, δτ)[2][3]
