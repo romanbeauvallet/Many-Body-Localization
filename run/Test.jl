@@ -8,11 +8,12 @@ using Plots
 using ITensorMPS
 using Statistics
 using Base.Threads
+using LaTeXStrings
 println("Nombre de threads disponibles : ", nthreads())
-
+using JSON
 ################ Parameters ###############
 
-N = 20
+N = 18
 J = 1
 h = 0
 δτ = 1e-3
@@ -22,12 +23,23 @@ n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
 betamax = 5
-step = 0.5
+step = 0.1
 Beta = n_sweep * δτ
 gammescale = 0.8
 j = "z"
 γ = 0.0
 betalist = collect(0:step:betamax)
+filename = joinpath("analyse_simulations_julia", "spec_XX_N18.json")
+json_string = read(filename, String)
+input = JSON.parse(json_string)
+
+# ========================= FUNCTIONS
+
+function energyexact(spectre, β, L)
+    weights = exp.(-β .* spectre)
+    Z = sum(weights)
+    return sum(spectre .* weights) / (Z * L)
+end
 
 function energysitetest(mps, sitemeasure, h)
     copy = orthogonalize(mps, sitemeasure)
@@ -77,23 +89,20 @@ function energyforbetalisttest(betamax, step, ancilla, δτ, h, s, cutoff, op)
     end
     return betalist, Energylist
 end
-################# try to add quantum number conservation
+
+# ============================== DATA
 test, s = MBL.AncillaMPO(N)
-#@show siteinds(test)
-#@show typeof(test)
-#@show test[3]
-#@show siteind(test, 3)
-xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, cutoff, "XY")
+
+#xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, cutoff, "XY")
 xdataMPO, ydataMPO = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
+
 exacterngy1 = [MBL.exactenergyXY1(β, h, γ) for β in xdataMPO]
-exacterngy2 = [MBL.exactenergyXY2(beta) for beta in xdataMPO]
-exacterngy3 = [MBL.exactenergyXY3(beta) for beta in xdataMPO]
+
+exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
+
 gr()
-scatter(xdatasites, ydatadites, label="mesure par site", xlabel="β", ylabel="energy", title="model XY, N=$N, cutoff=$cutoff, δτ=$δτ")
-scatter!(xdataMPO, ydataMPO/N, label="mesure MPO")
-plot!(xdataMPO, exacterngy1, label="exact energy 1")
-plot!(xdataMPO, exacterngy2, label="exact energy 2")
-plot!(xdataMPO, exacterngy3, label="exact energy 3")
-#plot!(xdataMPO[begin:end], -xdataMPO[begin:end]/4, label="pente de 1/4")
-#plot!(xdataMPO[begin:end], -xdataMPO[begin:end], label="pente de 1")
+#scatter(xdatasites, ydatadites/2, label="mesure par site", xlabel="β", ylabel="energy", title="model XY, N=$N, cutoff=$cutoff, δτ=$δτ")
+#scatter!(xdataMPO, ydataMPO/N, label="mesure MPO")
+plot(xdataMPO, exactdz, label="exact dz", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
+scatter!(xdataMPO, exacterngy1, label=latexstring("-1/4π\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"))
 #hline!([1/4-log(2)], label="exact energy at zero temperature")
