@@ -95,7 +95,7 @@ h -- disorder
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianHeisenberg(mps, h ,s)
+function hamiltonianHeisenberg(mps, h, s)
     N = length(mps)
     ampo = AutoMPO()
     for j in 1:N-1
@@ -116,7 +116,7 @@ h -- disorder
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianXY(mps, h ,s)
+function hamiltonianXY(mps, h, s)
     N = length(mps)
     ampo = AutoMPO()
     for j in 1:N-1
@@ -236,6 +236,35 @@ function energysite(mps, sitemeasure, h)
     return real(e)
 end
 
+"""
+mps -- MPS
+sitemeasure -- index in the mps of the site you want to compute the energy
+h -- disorder
+
+return the energy of mps at the site sitemeasure 
+"""
+function energysiteMPO(mps, sitemeasure, h, op::String)
+    copy = orthogonalize(mps, sitemeasure)
+    sn = siteind(copy, sitemeasure)
+    snn = siteind(copy, sitemeasure + 1)
+    if op == "XY"
+        gate =
+            1 / 2 * op("S+", sn) * op("S-", snn) +
+            1 / 2 * op("S-", sn) * op("S+", snn) +
+            h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    elseif op == "SS"
+        gate =
+            1 / 2 * op("S+", sn) * op("S-", snn) +
+            1 / 2 * op("S-", sn) * op("S+", snn) +
+            op("Sz", sn) * op("Sz", snn) +
+            h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    end
+    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    normalize!(inter)
+    adjust = replaceprime(gate, 0 => 2)
+    double = replaceprime(adjust * inter, 2 => 1)
+    return real(scalar(double * dag(inter)))
+end
 
 """
 N -- number of sites
@@ -335,7 +364,7 @@ end
 k -- length of the segment 
 j -- axis against sprin is measured
 
-th two boundary of the chain are excluded
+the two boundary of the chain are excluded
 
 return the correlation function over
 """
@@ -352,3 +381,16 @@ function correlationonlength(mps, k, j)
     return mean(Listintercorrel)
 end
 
+function energyagainstsiteMPO(mps, h, scale, op::String)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Energypersite = Vector(undef, length(sites))
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energysiteMPO(mps, sites[i], h, op)
+    end
+    return sites, mean(Energypersite)
+end

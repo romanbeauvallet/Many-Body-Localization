@@ -155,16 +155,33 @@ end
 
 ##################### Tracer Finite Temperature #################
 
-function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
+function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
-    realbetalist= reverse(push!(diff(betalist), 0))
+    realbetalist = reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
-    H = hamiltonianXY(ancilla, h, s)
+    if op == "XY"
+        H = hamiltonianXY(ancilla, h, s)
+    elseif op == "SS"
+        H = hamiltonianHeisenberg(ancilla, h, s)
+    end
     update = ancilla
-    @showprogress desc="compute energy for β" for i in eachindex(realbetalist)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i], s, cutoff, op)
         Energylist[i] = MBL.energyMPO(update, H)
+    end
+    return betalist, Energylist
+end
+
+function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
+    betalist = collect(0:step:betamax)
+    realbetalist = reverse(push!(diff(betalist), 0))
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i] / 2, s, cutoff, op)
+        _, Energylist[i] = energyagainstsiteMPO(update, h, gammescale, op)
     end
     return betalist, Energylist
 end

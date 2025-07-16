@@ -12,6 +12,8 @@ using QuadGK
 ################## Functions #####################
 
 """
+N -- number of sites
+
 return an initialized ancilla of length N 
 """
 function AncillaMPO(N)
@@ -20,6 +22,11 @@ function AncillaMPO(N)
     return rho, s
 end
 
+"""
+N -- number of sites
+
+return the ancilla mps with quantum numbers and Bell state between auxiliary and physical indexes
+"""
 function Ancilla(N) #à corriger car sinteinds de Vector{ITensor ne marche pas}
     phys_sites = siteinds("S=1/2", N; conserve_qns=true)
     aux_sites = siteinds("S=1/2", N; conserve_qns=true)
@@ -48,60 +55,95 @@ function Ancilla(N) #à corriger car sinteinds de Vector{ITensor ne marche pas}
 end
 
 """
+ancilla -- MPS on which gates will be applied
+h -- disorder
+s -- Index of ancilla
+op -- String, to choose which model you want (Heisenberg or XY)
+δτ -- step of Trotter-Suzuki
 
+return the vector of gates (ITensor)
 """
 function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)
-    if op=="XY"
+    if op == "XY"
         gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
         append!(gates, reverse(gates))
         return gates
-    elseif op=="SS"
+    elseif op == "SS"
         gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
         append!(gates, reverse(gates))
         return gates
     end
 end
 
-
 """
+ancilla -- MPS on which gates will be applied
+h -- disorder
+s -- Index of ancilla
+op -- String, to choose which model you want (Heisenberg or XY)
+δτ -- step of Trotter-Suzuki
+cutoff -- cutoff in the SVD when gates are applied
+beta -- temperature goal
 
+return the updated MPS at the temperature beta
 """
 function TEBDancilla!(ancilla, δτ, h, beta, s, cutoff, op)
     gates = gatesTEBDancilla(ancilla, h, δτ, s, op)
-    for β in 0: δτ:beta
+    for β in 0:δτ:beta
         ancilla = apply(gates, ancilla; cutoff)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
-  end
-  return ancilla
+    end
+    return ancilla
 end
 
+"""
+ancilla -- MPS
+H -- MPO operator of the energy (Hamiltonian)
+
+return the Tr(ancilla*H)
+"""
 function energyMPO(ancilla, H)
     return inner(ancilla, H)
 end
 
 """
-exact energy at temperature beta for XY model
-
+β -- inverse temperature
+h -- disorder
+γ -- proportion of XX and YY in the model
+exact energy at temperature beta for XY model at temperature β with disorder h 
 """
-function exactenergyXY(β, h, γ)
+function exactenergyXY(β, h, γ=0.0)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end
-    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2*pi)
+    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2 * pi)
     val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
-    return -val/2
-end 
+    return -val / 2
+end
+
 
 function exactenergyXY3(β)
-    integrand(k) = cos(k) * tanh(0.5*β * cos(k))
+    integrand(k) = cos(k) * tanh(0.5 * β * cos(k))
     val, _ = quadgk(integrand, 0, pi, rtol=1e-9)
-    return -val/(2*pi)
-end 
+    return -val / (2 * pi)
+end
 
 function exactenergyXY2(β)
     integrand(k) = cos(k) * tanh(β * cos(k))
-    val, _ = quadgk(integrand, 0, pi/2, rtol=1e-9)
-    return -2*val/(pi)
-end 
+    val, _ = quadgk(integrand, 0, pi / 2, rtol=1e-9)
+    return -2 * val / (pi)
+end
+
+"""
+spectre -- vap de l'Hamiltonien obtained by exact diagonalization
+β -- inverse temperature
+L -- number of sites in the Heinsenberg chain
+
+return the exact energy 
+"""
+function energyexact(spectre, β, L)
+    weights = exp.(-β .* spectre)
+    Z = sum(weights)
+    return sum(spectre .* weights) / (Z * L)
+end
