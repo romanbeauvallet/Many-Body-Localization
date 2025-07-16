@@ -93,16 +93,17 @@ end
 # ============================== DATA
 test, s = MBL.AncillaMPO(N)
 
-#xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, cutoff, "XY")
+xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, cutoff, "XY")
 xdataMPO, ydataMPO = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
 
-exacterngy1 = [MBL.exactenergyXY1(β, h, γ) for β in xdataMPO]
+exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
 
-exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
+#exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 
 gr()
-#scatter(xdatasites, ydatadites/2, label="mesure par site", xlabel="β", ylabel="energy", title="model XY, N=$N, cutoff=$cutoff, δτ=$δτ")
-#scatter!(xdataMPO, ydataMPO/N, label="mesure MPO")
-plot(xdataMPO, exactdz, label="exact dz", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
-scatter!(xdataMPO, exacterngy1, label=latexstring("-1/4π\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"))
+scatter(xdatasites, ydatadites/2, label="mesure par site/2")
+scatter!(xdatasites, ydatadites, label="mesure par site")
+scatter!(xdataMPO, ydataMPO / N, label="mesure MPO")
+#plot!(xdataMPO, exactdz, label="exact dz", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
+plot!(xdataMPO, exactenergy, label=latexstring("-1/4π\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"), xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
 #hline!([1/4-log(2)], label="exact energy at zero temperature")

@@ -85,7 +85,7 @@ end
 exact energy at temperature beta for XY model
 
 """
-function exactenergyXY1(β, h, γ)
+function exactenergyXY(β, h, γ)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end
