@@ -268,6 +268,22 @@ function energysiteMPO(mps, sitemeasure, h, operateur::String)
 end
 
 """
+mps -- MPS
+sitemeasure -- index in the mps of the site you want to compute the energy
+gate -- gates with random disorder
+
+return the energy of mps at the site sitemeasure 
+"""
+function energysiteMPOdisorder(mps, sitemeasure, gate)
+    copy = orthogonalize(mps, sitemeasure)
+    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    normalize!(inter)
+    adjust = replaceprime(gate, 0 => 2)
+    double = replaceprime(adjust * inter, 2 => 1)
+    return real(scalar(double * dag(inter)))
+end
+
+"""
 N -- number of sites
 
 return a Neel state of the form |↑↓↑↓...> with N sites
@@ -399,6 +415,26 @@ function energyagainstsiteMPO(mps, h, scale, op::String)
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
         #@show i 
         Energypersite[i] = energysiteMPO(mps, sites[i], h, op)
+    end
+    return sites, mean(Energypersite)
+end
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
+function energyagainstsiteMPOdisorder(mps, gates, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Energypersite = Vector(undef, length(sites))
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energyagainstsiteMPOdisorder(update, gates, scale)
     end
     return sites, mean(Energypersite)
 end

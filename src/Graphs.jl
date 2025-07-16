@@ -202,3 +202,17 @@ function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op::Strin
     end
     return betalist, Energylist
 end
+
+function energyforbestalistdisorder(betamax, step, ancilla, δτ, h, s, cutoff, op::String, gammescale,)
+    betalist = collect(0:step:betamax)
+    realbetalist = reverse(push!(diff(betalist), 0))
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        _, Energylist[i] = energyagainstsiteMPOdisorder(update, gammescale, gatesmeasure)
+    end
+    return betalist, Energylist
+end

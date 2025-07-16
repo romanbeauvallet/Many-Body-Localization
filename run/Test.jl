@@ -22,8 +22,9 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
-betamax = 2
-step = 0.01
+betamax = 1
+step1 = 0.1
+step2 = 0.01
 Beta = n_sweep * δτ
 gammescale = 0.6
 j = "z"
@@ -36,16 +37,24 @@ input = JSON.parse(json_string)
 # ============================== DATA
 test, s = MBL.AncillaMPO(N)
 
-xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "XY")
+xdataMPOstep1, ydataMPOstep1 = MBL.energyforbetalistMPO(betamax, step1, test, δτ, h, s, cutoff, "XY")
+xdataMPOstep2, ydataMPOstep2 = MBL.energyforbetalistMPO(betamax, step2, test, δτ, h, s, cutoff, "XY")
 
-exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
+exactenergy1 = [MBL.exactenergyXY(β, h, γ) for β in xdataMPOstep1]
+exactenergy2 = [MBL.exactenergyXY(β, h, γ) for β in xdataMPOstep2]
+
 
 #exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 
-xdatasites, ydatasites = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY", gammescale)
+xdatasites, ydatasites = MBL.energyforbetalist(betamax, step1, test, δτ, h, s, cutoff, "XY", gammescale)
+xdatasites2, ydatasites2 = MBL.energyforbetalist(betamax, step2, test, δτ, h, s, cutoff, "XY", gammescale)
+
 gr()
 p = plot()
-scatter!(p, xdatasites, ydatasites, label="mesure par site", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model Heisenberg")
-plot!(p, xdataMPO, exactenergy, label="exact energy")
-scatter!(p, xdataMPO, ydataMPO, label="mpo")
+scatter!(p, xdatasites, ydatasites, label="mesure par site step=0.1", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
+scatter!(p, xdatasites2, ydatasites2, label="mesure par site step=0.01")
+plot!(p, xdataMPOstep1, ydataMPOstep1, label="mpo step=0.1")
+plot!(p, xdataMPOstep2, ydataMPOstep2, label="mpo step=0.01")
+scatter!(xdataMPOstep1, exactenergy1; marker=:diamond, alpha=0.3, label="exact step=0.1")
+scatter!(xdataMPOstep2, exactenergy2; marker=:diamond, alpha=0.3, label="exact step=0.01")
 display(p)
