@@ -155,6 +155,13 @@ end
 
 ##################### Tracer Finite Temperature #################
 
+"""
+betamax -- maximal beta you want to reach
+step -- step in the beta list
+ancilla -- MPS
+
+return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
+"""
 function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
     betalist = collect(0:step:betamax)
     realbetalist = reverse(push!(diff(betalist), 0))
@@ -173,7 +180,14 @@ function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
     return betalist, Energylist
 end
 
-function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op)
+"""
+betamax -- maximal beta you want to reach
+step -- step in the beta list
+ancilla -- MPS
+
+return the MPS average energy measured with gates on gammescale*length(MPS) number of sites taken from the MPS center
+"""
+function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op, gammescale)
     betalist = collect(0:step:betamax)
     realbetalist = reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))

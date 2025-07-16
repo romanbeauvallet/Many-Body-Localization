@@ -36,8 +36,8 @@ input = JSON.parse(json_string)
 # ============================== DATA
 test, s = MBL.AncillaMPO(N)
 
-xdatasites, ydatadites = energyforbetalisttest(betamax, step, test, δτ, h, s, cutoff, "XY")
-xdataMPO, ydataMPO = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY")
+xdatasites, ydatadites = energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY", gammescale)
+xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "XY")
 
 exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
 

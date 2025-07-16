@@ -381,6 +381,13 @@ function correlationonlength(mps, k, j)
     return mean(Listintercorrel)
 end
 
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
 function energyagainstsiteMPO(mps, h, scale, op::String)
     N = length(mps)
     start, stop = MBL.section_trunc(N, scale)
