@@ -9,6 +9,8 @@ using Statistics
 using ITensors: Index, QN, Out, In, dag
 using Printf
 using QuadGK
+using Random
+using Distributions
 ################## Functions #####################
 
 """
@@ -146,4 +148,16 @@ function energyexact(spectre, β, L)
     weights = exp.(-β .* spectre)
     Z = sum(weights)
     return sum(spectre .* weights) / (Z * L)
+end
+
+"""
+
+"""
+function evolutionwithrandomdisorder(init::Int64, ancilla, h, δτ)
+    rng = MersenneTwister(init)
+    N = length(ancilla)
+    disorder = rand(rng, Uniform(-h, h), N-1)  # utilise ce générateur local fixé
+    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=disorder[n],)) for n in 1:1:(N-1)], s)
+    append!(gates, reverse(gates))
+    return gates
 end

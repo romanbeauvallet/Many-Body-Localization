@@ -6,6 +6,7 @@ using ITensorMPS
 using LinearAlgebra
 using ProgressMeter
 using Statistics
+#using Distributions
 ################## Functions #####################
 
 """
@@ -243,16 +244,16 @@ h -- disorder
 
 return the energy of mps at the site sitemeasure 
 """
-function energysiteMPO(mps, sitemeasure, h, op::String)
+function energysiteMPO(mps, sitemeasure, h, operateur::String)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
-    if op == "XY"
+    if operateur == "XY"
         gate =
             1 / 2 * op("S+", sn) * op("S-", snn) +
             1 / 2 * op("S-", sn) * op("S+", snn) +
             h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
-    elseif op == "SS"
+    elseif operateur == "SS"
         gate =
             1 / 2 * op("S+", sn) * op("S-", snn) +
             1 / 2 * op("S-", sn) * op("S+", snn) +
