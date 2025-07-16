@@ -163,6 +163,7 @@ ancilla -- MPS
 return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
 """
 function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
+    N = length(ancilla)
     betalist = collect(0:step:betamax)
     realbetalist = reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
@@ -172,10 +173,11 @@ function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
         H = hamiltonianHeisenberg(ancilla, h, s)
     end
     update = ancilla
+    gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i], s, cutoff, op)
-        Energylist[i] = MBL.energyMPO(update, H)
+        update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ)
+        Energylist[i] = MBL.energyMPO(update, H)/N
     end
     return betalist, Energylist
 end
@@ -187,14 +189,15 @@ ancilla -- MPS
 
 return the MPS average energy measured with gates on gammescale*length(MPS) number of sites taken from the MPS center
 """
-function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op, gammescale)
+function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op::String, gammescale)
     betalist = collect(0:step:betamax)
     realbetalist = reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
+    gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i] / 2, s, cutoff, op)
+        update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ)
         _, Energylist[i] = energyagainstsiteMPO(update, h, gammescale, op)
     end
     return betalist, Energylist

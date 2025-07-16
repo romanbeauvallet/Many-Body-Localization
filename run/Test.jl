@@ -15,17 +15,17 @@ using JSON
 
 N = 18
 J = 1
-h = 1
+h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
-betamax = 10
-step = 0.5
+betamax = 2
+step = 0.01
 Beta = n_sweep * δτ
-gammescale = 0.8
+gammescale = 0.6
 j = "z"
 γ = 0.0
 betalist = collect(0:step:betamax)
@@ -36,14 +36,16 @@ input = JSON.parse(json_string)
 # ============================== DATA
 test, s = MBL.AncillaMPO(N)
 
-#xdatasites, ydatadites = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "SS", gammescale)
-#xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "SS")
+xdataMPO, ydataMPO = MBL.energyforbetalistMPO(betamax, step, test, δτ, h, s, cutoff, "XY")
 
-#exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
+exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
 
 #exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 
-#scatter!(p, xdatasites, ydatadites, label="mesure par site", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model Heisenberg")
-
-@show MBL.evolutionwithrandomdisorder(1234, test, s, h, δτ)[1][3]
-@show MBL.evolutionwithrandomdisorder(1234, test, s, h, δτ)[2][3]
+xdatasites, ydatasites = MBL.energyforbetalist(betamax, step, test, δτ, h, s, cutoff, "XY", gammescale)
+gr()
+p = plot()
+scatter!(p, xdatasites, ydatasites, label="mesure par site", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model Heisenberg")
+plot!(p, xdataMPO, exactenergy, label="exact energy")
+scatter!(p, xdataMPO, ydataMPO, label="mpo")
+display(p)
