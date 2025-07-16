@@ -22,8 +22,8 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 Dmax = 300
-betamax = 5
-step = 0.1
+betamax = 10
+step = 0.5
 Beta = n_sweep * δτ
 gammescale = 0.8
 j = "z"
@@ -84,7 +84,7 @@ function energyforbetalisttest(betamax, step, ancilla, δτ, h, s, cutoff, op)
     update = ancilla
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i], s, cutoff, op)
+        update = MBL.TEBDancilla!(update, δτ, h, realbetalist[i]/2, s, cutoff, op)
         _, Energylist[i] = energyagainstsitetest(update, h, gammescale)
     end
     return betalist, Energylist
@@ -101,9 +101,8 @@ exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPO]
 #exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 
 gr()
-scatter(xdatasites, ydatadites/2, label="mesure par site/2")
 scatter!(xdatasites, ydatadites, label="mesure par site")
 scatter!(xdataMPO, ydataMPO / N, label="mesure MPO")
 #plot!(xdataMPO, exactdz, label="exact dz", xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
-plot!(xdataMPO, exactenergy, label=latexstring("-1/4π\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"), xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
+plot!(xdataMPO, exactenergy, label=latexstring("\\frac{-1}{4π}\\int_{-π}^{π} cos(k)tanh(βcos(k)/2)dk"), xlabel="β", ylabel="<H>/N", title="N=$N, δτ=$δτ, cutoff=$cutoff, model XY")
 #hline!([1/4-log(2)], label="exact energy at zero temperature")
