@@ -223,22 +223,12 @@ return the energy of mps at the site sitemeasure
 """
 function energysiteMPOdisorder(mps, sitemeasure, gate)
     indexes = inds(gate)
-    @show indexes
-    s1 = siteind(mps, sitemeasure)
-    s2 = siteind(mps, sitemeasure + 1)
-    #replaceinds(gate, (indexes[1] => s1, indexes[2] => prime(s1), indexes[3] => s2, indexes[4] => prime(s2)))
     newgate = replaceprime(gate, 0=>2)
-    #@show inds(newgate)
-    #@show inds(gate)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
-    @show inds(inter)
     adjust = replaceprime(inter, 1=>2)
-    #@show inds(adjust)
     double = newgate*adjust
-    @show inds(double)
-    @show inds(dag(inter))
     return real(scalar(double*dag(inter))) 
 end
 
