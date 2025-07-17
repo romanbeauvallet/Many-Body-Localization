@@ -21,11 +21,13 @@ D0 = 10
 site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
-Dmax = 300
+dmax = 300
 betamax = 10
 stepbeta = 0.1
 Beta = n_sweep * δτ
 gammescale = 0.6
+noise = 1e-8
+n_sweepDMRG = 10
 j = "z"
 γ = 0.0
 init = 1234
@@ -39,18 +41,21 @@ input = JSON.parse(json_string)
 
 # ============================== DATA
 ancilla, s = MBL.AncillaMPO(N)
+mps, smps = neelstate(N)
+H = hamiltonianHeisenberg(mps, h, smps)
 
-xdata1, ydata1 = MBL.energyforbetalist(betalist1, ancilla, δτ, h, s, cutoff, "SS", gammescale)
-xdata2, ydata2 = MBL.energyforbetalist(betalist2, ancilla, δτ, h, s, cutoff, "SS", gammescale)
-xdata3, ydata3 = MBL.energyforbetalist(betalist3, ancilla, δτ, h, s, cutoff, "SS", gammescale)
-
+_, H, E= MBL.groundstateDMRG(mps, H, n_sweepDMRG, dmax, cutoff, noise, gammescale, h)
+xdata1, ydata1 = MBL.energyforbestalistdisorder(betalist3, ancilla, δτ, h, s, cutoff, gammescale, init)
+xdata2, ydata2 = MBL.energyforbetalist(betalist3, ancilla, δτ, h, s, cutoff, "SS", gammescale)
 #exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPOstep]
 
 
 #exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
 gr()
 p = plot()
-scatter!(p, xdata1, ydata1, xlabel="β", ylabel="energy moyenne par site", label ="TEBD step=0.1", title="N=$N, h=$h, cutoff=$cutoff, δτ=$δτ, model SS")
+scatter!(p, xdata1, ydata1, xlabel="β", ylabel="energy moyenne par site", label ="TEBD step=0.5 (h)", title="N=$N, h=$h, cutoff=$cutoff, δτ=$δτ, model SS")
 scatter!(p, xdata2, ydata2, label ="TEBD step=0.5")
-scatter!(p, xdata3, ydata3, label ="TEBD step=1")
 hline!(p, [1/4-log(2)], label="exact energy at 0K without disorder")
+hline!(p, [H], label="exact energy at 0K DMRG MPO")
+hline!(p, [E], label="exact energy at 0K DMRG MPO")
+

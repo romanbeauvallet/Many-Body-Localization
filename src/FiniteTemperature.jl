@@ -3,6 +3,7 @@
 ################## Librairies ####################
 using ITensors
 using ITensorMPS
+using MBL
 using LinearAlgebra
 using ProgressMeter
 using Statistics
@@ -61,7 +62,7 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ)
     if δτ <= 0
         return "δτ must be non negative"
     end
-    k = floor(beta/δτ)
+    k = floor(beta / δτ)
     for i in 1:1:k
         ancilla = apply(gates, ancilla; cutoff)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
@@ -136,4 +137,19 @@ function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
     gatesevolve = exp.(-δτ .* gatesmeasure)
     append!(gatesevolve, reverse(gatesevolve))
     return gatesmeasure, gatesevolve
+end
+
+# ======================== DMRG ========================
+"""
+works for mps only
+"""
+function groundstateDMRG(psi0, H, n_sweep, dmax, cutoff, noise, gammescale, h)
+    n = length(psi0)
+    sweeps = Sweeps(n_sweep)
+    maxdim!(sweeps, dmax)
+    cutoff!(sweeps, cutoff)
+    noise!(sweeps, noise)
+    energy, psi = dmrg(H, psi0, sweeps)
+    s, E = energyagainstsite(psi, h, gammescale)
+    return psi, energy / n, mean(E)
 end
