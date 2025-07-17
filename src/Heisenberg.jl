@@ -41,34 +41,6 @@ function ITensors.op(::OpName"exp-τXY", ::SiteType"S=1/2", s1::Index, s2::Index
 end
 
 """
-N -- number of sites 
-J -- coupling constant
-h -- disorder constant
-
-return the Trotter Suzuki gates (order 2) and the Hamiltonian to compute TEBD and energy
-"""
-function gateTrotterSuzukiandhamiltonian(mps, h, δτ, parity::String)#essayer l'autre contraction où on fait pair impair à la suite au lieu de tout pair puis impair
-    N = length(mps)
-    s = siteinds(mps)
-    if mod(N, 2) == 0
-        if parity == "even"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:2:(N-1)], s)
-        elseif parity == "odd"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ, h=h,)) for n in 2:2:(N-2)], s)
-        end
-    elseif mod(N, 2) == 1
-        if parity == "even"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 2:2:(N-2)], s)
-        elseif parity == "odd"
-            gates = ops([("exp-τSS", (n, n + 1), (τ=δτ, h=h,)) for n in 1:2:(N-1)], s)
-        end
-    end
-    #@show typeof(gates)
-    #append!(gates, reverse(gates))
-    return gates
-end
-
-"""
 return the vector of Trotter Suzuki gates for Heinsenberg model in a row that means gates are in the order: (1,2) ; (2,3) ; ...
 """
 function gateTrotterSuzukirow(mps, h, δτ)
@@ -191,31 +163,6 @@ function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax)
     return mps
 end
 
-
-"""
-nsweep -- number of sweeps
-mps -- initial mps
-gates -- even and odd you want to apply
-cutoff -- cutoff in the truncation part in the applying gate process
-
-return the converged mps with n sweeps along the mps
-"""
-function tebdstepHeisenberg!(nsweep, mps, h, δτ, cutoff, Dmax)
-    @showprogress for i in 1:nsweep
-        gateseven = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "even")
-        mps = apply(gateseven, mps; cutoff, maxdim=Dmax)
-        normalize!(mps)
-        gatesodd = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "odd")
-        mps = apply(gatesodd, mps; cutoff, maxdim=Dmax)
-        normalize!(mps)
-        gateseven = gateTrotterSuzukiandhamiltonian(mps, h, δτ, "even")
-        mps = apply(gateseven, mps; cutoff, maxdim=Dmax)
-        normalize!(mps)
-    end
-    return mps
-end
-
-
 """
 mps -- converged mps with tebd you want to access to the energy at the link sitemeasure
 sitemeasure -- index of the site
@@ -275,12 +222,24 @@ gate -- gates with random disorder
 return the energy of mps at the site sitemeasure 
 """
 function energysiteMPOdisorder(mps, sitemeasure, gate)
+    indexes = inds(gate)
+    @show indexes
+    s1 = siteind(mps, sitemeasure)
+    s2 = siteind(mps, sitemeasure + 1)
+    #replaceinds(gate, (indexes[1] => s1, indexes[2] => prime(s1), indexes[3] => s2, indexes[4] => prime(s2)))
+    newgate = replaceprime(gate, 0=>2)
+    #@show inds(newgate)
+    #@show inds(gate)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
-    adjust = replaceprime(gate, 0 => 2)
-    double = replaceprime(adjust * inter, 2 => 1)
-    return real(scalar(double * dag(inter)))
+    @show inds(inter)
+    adjust = replaceprime(inter, 1=>2)
+    #@show inds(adjust)
+    double = newgate*adjust
+    @show inds(double)
+    @show inds(dag(inter))
+    return real(scalar(double*dag(inter))) 
 end
 
 """
@@ -311,38 +270,6 @@ function maxbonddim(mps)
         maxdim = max(maxdim, dim(s))
     end
     return maxdim
-end
-
-"""
-j -- axis of the spin operator 
-n -- starting site
-p -- the other site, the distance between the two sites is p-n+1
-
-return the correlation function
-"""
-function correlationSpinoperatorwrong(mps, n, p, j)
-    copy = orthogonalize(mps, n)
-    sn = siteind(copy, n)
-    sp = siteind(copy, p)
-    if j == "z"
-        S_n = op("Sz", sn)
-        S_p = op("Sz", sp)
-        psi_n = apply(S_n, copy; site=n)
-        psi_np = apply(S_p, psi_n; site=p)
-        return inner(copy, psi_np)
-    elseif j == "x"
-        S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
-        S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
-        psi_n = apply(S_n, copy; site=n)
-        psi_np = apply(S_p, psi_n; site=p)
-        return inner(copy, psi_np)
-    elseif j == "y"
-        S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
-        S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
-        psi_n = apply(S_n, copy; site=n)
-        psi_np = apply(S_p, psi_n; site=p)
-        return inner(copy, psi_np)
-    end
 end
 
 """
@@ -432,9 +359,10 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
     sites = collect(start:1:stop)
     #@show sites
     Energypersite = Vector(undef, length(sites))
+    update = mps
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
         #@show i 
-        Energypersite[i] = energyagainstsiteMPOdisorder(update, gates, scale)
+        Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
     return sites, mean(Energypersite)
 end

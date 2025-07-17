@@ -177,7 +177,7 @@ function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ)
-        Energylist[i] = MBL.energyMPO(update, H)/N
+        Energylist[i] = MBL.energyMPO(update, H) / N
     end
     return betalist, Energylist
 end
@@ -203,16 +203,16 @@ function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op::Strin
     return betalist, Energylist
 end
 
-function energyforbestalistdisorder(betamax, step, ancilla, δτ, h, s, cutoff, op::String, gammescale,)
+function energyforbestalistdisorder(betamax, step, ancilla, δτ, h, s, cutoff, gammescale, init)
     betalist = collect(0:step:betamax)
     realbetalist = reverse(push!(diff(betalist), 0))
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
-    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
+    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
-        _, Energylist[i] = energyagainstsiteMPOdisorder(update, gammescale, gatesmeasure)
+        _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
     end
     return betalist, Energylist
 end
