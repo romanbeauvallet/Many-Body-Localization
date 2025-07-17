@@ -1,4 +1,9 @@
+#!usr/bin/env julia
 
+using ITensors
+using ITensorMPS
+using ProgressMeter
+using QuadGK
 
 """
 N -- number of sites 
