@@ -189,28 +189,27 @@ ancilla -- MPS
 
 return the MPS average energy measured with gates on gammescale*length(MPS) number of sites taken from the MPS center
 """
-function energyforbetalist(betamax, step, ancilla, δτ, h, s, cutoff, op::String, gammescale)
-    betalist = collect(0:step:betamax)
-    realbetalist = reverse(push!(diff(betalist), 0))
+function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, gammescale)
+    realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
+        #test = deepcopy(update)
         update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ)
-        @show update[3]
+        #test = deepcopy(array(update[3].tensor))
         _, Energylist[i] = energyagainstsiteMPO(update, h, gammescale, op)
-        @show update[3]
-
+        #@show test ≈ array(update[3].tensor)
+        #@show test ≈ update
     end
     return betalist, Energylist
 end
 
 ####################### Random disorder #######################
 
-function energyforbestalistdisorder(betamax, step, ancilla, δτ, h, s, cutoff, gammescale, init)
-    betalist = collect(0:step:betamax)
-    realbetalist = reverse(push!(diff(betalist), 0))
+function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init)
+    realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
     gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
