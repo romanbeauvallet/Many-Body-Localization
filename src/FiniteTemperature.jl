@@ -141,15 +141,21 @@ end
 
 # ======================== DMRG ========================
 """
-works for mps only
+psi0 -- initial mps 
+H -- operator on which you optimise : <psi/H/psi>/<psi/psi>
+n_sweep -- number of sweep you'll optimize the function
+dmax -- maximal bon dimension in the mps
+cutoff -- cutoff in the svd process of the optimization
+noise -- acceptance noise
+
+works for mps only and return the ground state for the operator H and the ground value of the operator H
 """
-function groundstateDMRG(psi0, H, n_sweep, dmax, cutoff, noise, gammescale, h)
+function groundstateDMRG(psi0, H, n_sweep, dmax, cutoff, noise)
     n = length(psi0)
     sweeps = Sweeps(n_sweep)
     maxdim!(sweeps, dmax)
     cutoff!(sweeps, cutoff)
     noise!(sweeps, noise)
     energy, psi = dmrg(H, psi0, sweeps)
-    s, E = energyagainstsite(psi, h, gammescale)
-    return psi, energy / n, mean(E)
+    return psi, energy / n
 end

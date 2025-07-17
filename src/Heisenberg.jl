@@ -6,9 +6,33 @@ using ITensorMPS
 using LinearAlgebra
 using ProgressMeter
 using Statistics
-#using Distributions
 ################## Functions #####################
 
+# ==================================================== Init
+"""
+s -- sites index
+D -- bond dimension 
+
+return an randmoly initialized MPS with the sites indexes in input 
+"""
+function random_initialized_MPS(N, D)
+    s = ITensors.siteinds("S=1/2", N)
+    psi = random_mps(s, linkdims=D)
+    return psi, s
+end
+
+"""
+N -- number of sites
+
+return a Neel state of the form |↑↓↑↓...> with N sites
+"""
+function neelstate(N)
+    s = siteinds("S=1/2", N, conserve_qns=true)
+    mps = MPS(s, n -> isodd(n) ? "Up" : "Dn")
+    return mps, s
+end
+
+# ==================================================== TEBD
 """
 N -- number of sites 
 J -- coupling constant
@@ -63,6 +87,25 @@ function gateTrotterSuzukirowXY(mps, h, δτ)
 end
 
 """
+return the converged mps with the row application of gates
+"""
+function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax, op::String)
+    if op == "SS"
+        gate = gateTrotterSuzukirow(mps, h, δτ)
+    elseif op =="XY"
+        gate = gateTrotterSuzukirowXY(mps, h, δτ)  
+    end     
+    @showprogress desc = "tebd steps" for i in 1:nsweep
+        mps = apply(gate, mps; cutoff, maxdim=Dmax)
+        normalize!(mps)
+    end
+    return mps
+end
+
+
+# ==================================================== Operators
+
+"""
 mps -- mps on which you compute the energy
 h -- disorder
 
@@ -110,6 +153,8 @@ function exactgroundenergy(J=1)
     return J * (1 / 4 - log(2))
 end
 
+# ============================================ Measure 
+
 """
 psi -- MPS converged on which you make the measurement 
 n -- site measure
@@ -137,30 +182,6 @@ function measure_H(psi, n, H)
     orthogonalize!(psi, n)
     e = inner(psi, H, psi)
     return e
-end
-
-"""
-s -- sites index
-D -- bond dimension 
-
-return an randmoly initialized MPS with the sites indexes in input 
-"""
-function random_initialized_MPS(N, D)
-    s = ITensors.siteinds("S=1/2", N)
-    psi = random_mps(s, linkdims=D)
-    return psi, s
-end
-
-"""
-return the converged mps with the row application of gates
-"""
-function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax)
-    @showprogress desc = "tebd steps" for i in 1:nsweep
-        gate = gateTrotterSuzukirow(mps, h, δτ)
-        mps = apply(gate, mps; cutoff, maxdim=Dmax)
-        normalize!(mps)
-    end
-    return mps
 end
 
 """
@@ -230,36 +251,6 @@ function energysiteMPOdisorder(mps, sitemeasure, gate)
     adjust = replaceprime(inter, 1=>2)
     double = newgate*adjust
     return real(scalar(double*dag(inter))) 
-end
-
-"""
-N -- number of sites
-
-return a Neel state of the form |↑↓↑↓...> with N sites
-"""
-function neelstate(N)
-    s = siteinds("S=1/2", N, conserve_qns=true)
-    mps = MPS(s, n -> isodd(n) ? "Up" : "Dn")
-    return mps, s
-end
-
-"""
-return the max bond dimension in the mps
-
-"""
-function maxbonddim(mps)
-    maxdim = 0
-    #@show typeof(mps)
-    for i in 1:(length(mps)-1)
-        #@show i
-        s = commonind(mps[i], mps[i+1])
-        #@show s
-        if s === nothing
-            continue
-        end
-        maxdim = max(maxdim, dim(s))
-    end
-    return maxdim
 end
 
 """
@@ -355,4 +346,24 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
         Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
     return sites, mean(Energypersite)
+end
+
+# =========================================== Else
+"""
+return the max bond dimension in the mps
+
+"""
+function maxbonddim(mps)
+    maxdim = 0
+    #@show typeof(mps)
+    for i in 1:(length(mps)-1)
+        #@show i
+        s = commonind(mps[i], mps[i+1])
+        #@show s
+        if s === nothing
+            continue
+        end
+        maxdim = max(maxdim, dim(s))
+    end
+    return maxdim
 end
