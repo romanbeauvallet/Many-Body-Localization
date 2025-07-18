@@ -132,7 +132,7 @@ function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
         disorder = [0 for i in 1:N-1]
     elseif h > 0
         disorder = rand(rng, Uniform(-h, h), N - 1)  # utilise ce générateur local fixé
-        @show disorder
+        #@show disorder
     end
     gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N-1)], s)
     gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
