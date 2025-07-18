@@ -63,7 +63,7 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ)
         return "δτ must be non negative"
     end
     k = floor(beta / δτ)
-    for i in 1:1:k
+    @showprogress desc="evolution in temperature" for i in 1:1:k
         ancilla = apply(gates, ancilla; cutoff)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
@@ -110,6 +110,9 @@ function energyexact(spectre, β, L)
     return sum(spectre .* weights) / (Z * L)
 end
 
+"""
+return typeof::Vector{ITensor} =! ITensorMPS.MPO
+"""
 function ITensors.op(::OpName"exp-τSSdisorder", ::SiteType"S=1/2", s1::Index, s2::Index; h)
     H =
         1 / 2 * op("S+", s1) * op("S-", s2) +
@@ -137,7 +140,7 @@ function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
     gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N-1)], s)
     gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
     append!(gatesevolve, reverse(gatesevolve))
-    return gatesmeasure, gatesevolve
+    return gatesmeasure, gatesevolve, disorder
 end
 
 # ======================== DMRG ========================

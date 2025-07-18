@@ -110,7 +110,7 @@ h -- disorder
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianHeisenberg(mps, h, s)
+function hamiltonianHeisenberg(mps, h::Float64, s)
     N = length(mps)
     ampo = AutoMPO()
     for j in 1:N-1
@@ -124,6 +124,25 @@ function hamiltonianHeisenberg(mps, h, s)
     return H
 end
 
+"""
+mps -- mps on which you compute the energy
+h -- disorder
+
+return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
+"""
+function hamiltonianHeisenberg(mps, h::Vector, s)
+    N = length(mps)
+    ampo = AutoMPO()
+    for j in 1:N-1
+        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+        add!(ampo, 1, "Sz", j, "Sz", j + 1)
+        add!(ampo, h[j], "Sz", j)
+    end
+    add!(ampo, h[N], "Sz", N)
+    H = MPO(ampo, s)
+    return H
+end
 
 """
 mps -- mps on which you compute the energy

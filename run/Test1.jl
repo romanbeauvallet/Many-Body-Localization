@@ -31,7 +31,7 @@ noise = 1e-8
 n_sweepDMRG = 10
 j = "z"
 γ = 0.0
-init = 1234
+init = 4562
 betalist = collect(0:stepbeta:betamax)
 
 # ============================== DATA

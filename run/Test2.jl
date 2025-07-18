@@ -23,12 +23,12 @@ site_measure = div(N, 2)
 n_sweep = 3000
 cutoff = 1e-15
 dmax = 300
-betamax = 15
+betamax = 1
 stepbeta = 1
 Beta = n_sweep * δτ
 gammescale = 0.6
 noise = 1e-8
-n_sweepDMRG = 50
+n_sweepDMRG = 20
 j = "z"
 γ = 0.0
 init = 1234
@@ -40,14 +40,25 @@ json_string = read(filename, String)
 input = JSON.parse(json_string)
 
 ancilla, s = MBL.AncillaMPO(N)
-mps, smps = neelstate(N)
-copy = deepcopy(ancilla)
-
-H, gates = MBL.evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
-
-update = MBL.TEBDancilla(ancilla, gates, 10, cutoff, δτ)
-psi, H = MBL.groundstateDMRG(copy, H, n_sweepDMRG, dmax, cutoff, noise)
-
+mps, smps = neelstate(N-1)
+println("init")
+_, gates, champ = MBL.evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
+println("gates generated")
+update = MBL.TEBDancilla!(ancilla, gates, betamax, cutoff, δτ)
+println("MPO done")
+ampo = AutoMPO()
+for j in 1:(N - 1)
+    # ampo .+= (operator_coefficient, operator_name, site_index, ...)
+    ampo .+= (1.0, "Sz", j, "Sz", j + 1)
+    ampo .+= (0.5, "S+", j, "S-", j + 1)
+    ampo .+= (0.5, "S-", j, "S+", j + 1)
+    ampo .+= (champ[j], "Sz", j)
+end
+ampo .+= (champ[N], "Sz", N)
+# Convert the AutoMPO to an MPO
+H = MPO(ampo, smps)
+psi, E = MBL.groundstateDMRG(mps, H, n_sweepDMRG, dmax, cutoff, noise)
+println("update done")
 L = MBL.section_trunc(N, gammescale)
 xdataDMRG = Vector()
 xdata = Vector()
