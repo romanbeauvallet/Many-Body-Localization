@@ -41,16 +41,23 @@ input = JSON.parse(json_string)
 
 ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
-H = MBL.hamiltonianXY(mps, h, smps)
+copy = deepcopy(ancilla)
 
-_, H = MBL.groundstateDMRG(mps, H, n_sweepDMRG, dmax, cutoff, noise)
-xdata2, ydata2 = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
-exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdata2]
+H, gates = MBL.evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
 
+update = MBL.TEBDancilla(ancilla, gates, 10, cutoff, δτ)
+psi, H = MBL.groundstateDMRG(copy, H, n_sweepDMRG, dmax, cutoff, noise)
 
-#exactdz = [energyexact(input["spectrum"], beta, N) for beta in xdataMPO]
-gr()
-p = plot()
-scatter!(p, xdata2, ydata2, xlabel="β", ylabel="energy moyenne par site", label ="TEBD", title="N=$N, h=$h, cutoff=$cutoff, δτ=$δτ, model XY")
-hline!(p, [H], label="exact energy at 0K DMRG MPO")
-plot!(p, xdata2, exactenergy, label="exact energy")
+L = MBL.section_trunc(N, gammescale)
+xdataDMRG = Vector()
+xdata = Vector()
+
+for i in 1:length(L)-1
+    T = randn(2,2,2,2)
+    s1, s2 = siteind(update, L[i]), siteind(update, L[i+1])
+    p1, p2 = siteind(psi, L[i]), siteind(psi, L[i+1])
+    S = MBL.randomoperator(T,s1,s2)
+    P = MBL.randomoperator(T, p1,p2)
+    push!(xdata, energysiteMPOdisorder(update, L[i], S))
+    push!(xdataDMRG, energysiteMPOdisorder(psi, L[i], P))
+end

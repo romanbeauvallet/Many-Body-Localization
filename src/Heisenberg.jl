@@ -92,9 +92,9 @@ return the converged mps with the row application of gates
 function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax, op::String)
     if op == "SS"
         gate = gateTrotterSuzukirow(mps, h, δτ)
-    elseif op =="XY"
-        gate = gateTrotterSuzukirowXY(mps, h, δτ)  
-    end     
+    elseif op == "XY"
+        gate = gateTrotterSuzukirowXY(mps, h, δτ)
+    end
     @showprogress desc = "tebd steps" for i in 1:nsweep
         mps = apply(gate, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
@@ -164,6 +164,22 @@ function measure_S(psi::MPS, n, j::String)
     psicopy = orthogonalize(psi, n)
     sn = siteind(psicopy, n)
     Sz = scalar(dag(prime(psicopy[n], "Site")) * op(string, sn) * psicopy[n])
+    return real(Sz)
+end
+
+"""
+psi -- MPS converged on which you make the measurement 
+n -- site measure
+
+return the Sz value on the site n 
+"""
+function measure_S(psi::MPO, n, j::String)
+    string = "S" * j
+    psicopy = orthogonalize(psi, n)
+    sn = siteind(psicopy, n)
+    gate = replaceprime(op(string, sn), 1 => 2)
+    inter = replaceprime(gate * psicopy[n], 2 => 0)
+    Sz = scalar(dag(psicopy[n]) * inter)
     return real(Sz)
 end
 
@@ -241,13 +257,13 @@ gate -- gates with random disorder
 return the energy of mps at the site sitemeasure 
 """
 function energysiteMPOdisorder(mps, sitemeasure, gate)
-    newgate = replaceprime(gate, 0=>2)
+    newgate = replaceprime(gate, 0 => 2)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
-    adjust = replaceprime(inter, 1=>2)
-    double = newgate*adjust
-    return real(scalar(double*dag(inter))) 
+    adjust = replaceprime(inter, 1 => 2)
+    double = newgate * adjust
+    return real(scalar(double * dag(inter)))
 end
 
 """
@@ -323,6 +339,7 @@ function energyagainstsiteMPO(mps, h, scale, op::String)
     end
     return sites, mean(Energypersite)
 end
+
 """
 mps -- MPS
 h -- disorder 
@@ -343,6 +360,28 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
         Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
     return sites, mean(Energypersite)
+end
+
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
+function magnetagainstsiteMPOdisorder(mps, gates, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Magnetpersite = Vector(undef, length(sites))
+    update = mps
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Magnetpersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
+    end
+    return sites, Magnetpersite
 end
 
 # =========================================== Else
@@ -375,4 +414,11 @@ function section_trunc(N, scale)
     q = div(N, 2)
     be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
     return be, st
+end
+
+"""
+return a full random operator 
+"""
+function randomoperator(T, s1, s2)
+    return ITensor(T, s1, s2, prime(s1), prime(s2))
 end

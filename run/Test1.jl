@@ -13,14 +13,14 @@ println("Nombre de threads disponibles : ", nthreads())
 using JSON
 ################ Parameters ###############
 
-N = 18
+N = 50
 J = 1
 h0 = 0
-h = 3.5
+h = 100
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
-n_sweep = 1000
+n_sweep = 5000
 cutoff = 1e-15
 dmax = 300
 betamax = 10
@@ -38,14 +38,31 @@ betalist = collect(0:stepbeta:betamax)
 ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
 H = hamiltonianHeisenberg(mps, h, smps)
+ydata=Vector{Vector{Float64}}()
+function void()
+    list= [100 for i in 1:n_sweep/100]
+    update = mps
+    for i in list
+        update = tebdstepHeisenbergRow!(i, update, h, δτ, cutoff, dmax, "SS")
+        _ , m = magnetagainstsite(update, j, gammescale)
+        push!(ydata, m)
+    end
+    return ydata
+end
 
-xdata1, ydata1 = MBL.energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init)
-#xdata2, ydata2 = MBL.energyforbetalist(betalist, ancilla, δτ, h0, s, cutoff, "SS", gammescale)
-#exactenergy = [MBL.exactenergyXY(β, h, γ) for β in xdataMPOstep]
-
+ydata = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, j)
+matrix = abs.(hcat(ydata...))
+st, dp = MBL.section_trunc(N, gammescale)
+L = collect(st:dp)
+inter = matrix./maximum(matrix)
 gr()
-p = plot()
-scatter!(p, xdata1, ydata1, xlabel="β", ylabel="energy moyenne par site", label ="TEBD step=0.5 (h)", title="N=$N, h=$h, cutoff=$cutoff, δτ=$δτ, model SS")
+
+heatmap(betalist, L, inter,
+        xlabel="β", ylabel="L",
+        title="Magnétisation",
+        colorbar_title="M",
+        aspect_ratio=:auto,
+        c=:viridis)  # palette de couleur
 #scatter!(p, xdata2, ydata2, label ="TEBD step=0.5")
 #hline!(p, [1/4-log(2)], label="exact energy at 0K without disorder")
 

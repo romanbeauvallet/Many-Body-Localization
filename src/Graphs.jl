@@ -104,24 +104,7 @@ function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, ga
         update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ)
         _, Energylist[i] = energyagainstsiteMPO(update, h, gammescale, op)
     end
-    return betalist, Energylist
-end
-
-####################### Random disorder #######################
-"""
-return the betalist and the energy list with a random uniform on each site
-"""
-function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init)
-    realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
-    update = ancilla
-    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
-        _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-    end
-    return betalist, Energylist
+    return Energylist
 end
 
 """
@@ -138,6 +121,24 @@ function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numb
     return timesteplist, EnergyList
 end
 
+
+####################### Random disorder #######################
+"""
+return the betalist and the energy list with a random uniform on each site
+"""
+function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+    end
+    return Energylist
+end
+
 # =============================================== Magnetization
 """
 return the site list and the magnet (Sz) per site
@@ -146,7 +147,7 @@ function magnetagainstsite(mps, j::String, scale)
     N = length(mps)
     start, stop = section_trunc(N, scale)
     sites = collect(start:1:stop)
-    Magnetpersite = Vector{}(undef, length(sites))
+    Magnetpersite = Vector{Float64}(undef, length(sites))
     @showprogress desc = "calcul magnet over sites" for p in eachindex(sites)
         Magnetpersite[p] = measure_S(mps, p, j)
     end
@@ -187,6 +188,37 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     return sweeplist, meanvalues
 end
 
+"""
+return the betalist and the energy list with a random uniform on each site
+"""
+function magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, j::String)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
+    update = ancilla
+    _, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        _, Magnetlist[i] = magnetagainstsite(ancilla, j, gammescale)
+    end
+    return Magnetlist
+end
+
+"""
+return the betalist and the energy list with a random uniform on each site
+"""
+function magnetforbestalist(betalist, ancilla, δτ, h, s, cutoff, gammescale, op, j::String)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
+    update = ancilla
+    gatesevolve = gatesTEBDancilla(update, h, δτ, s, op)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        _, Magnetlist[i] = magnetagainstsite(ancilla, j, gammescale)
+    end
+    return Magnetlist
+end
 # ======================================== Correlation
 """
 return the list of correlation function on the whole chain with the two boundaries excluded

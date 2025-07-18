@@ -65,8 +65,8 @@ metadata = Dict{String,Any}(
     "proportion spin average" => gammescale,
     "maximum bond dimension per tebd step" => nothing,
     "type d'initialisation" => init,
-    "seed for random" => initseed, 
-    "pas pour beta" => stepbeta, 
+    "seed for random" => initseed,
+    "pas pour beta" => stepbeta,
     "limite max pour beta" => betamax
 )
 println("\nmetadata:")
@@ -96,7 +96,9 @@ function voiddisorder()
         _, E = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
         push!(Energylist, E)
         results["energy sweep list random disorder"] = Energylist
-        
+        _, M =
+            push!(Magnetlist, M)
+
         #####data saving
         output_data = merge(metadata, results)
         #savefile = get_savefile(output_data)
