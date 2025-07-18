@@ -118,7 +118,7 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i], cutoff, δτ)
         _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
     end
     return betalist, Energylist
@@ -139,7 +139,6 @@ function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numb
 end
 
 # =============================================== Magnetization
-
 """
 return the site list and the magnet (Sz) per site
 """
@@ -154,32 +153,6 @@ function magnetagainstsite(mps, j::String, scale)
     return sites, Magnetpersite
 end
 
-"""
-N -- length of a vector
-scale -- between 0 and 1, overlap between the sliced list and the original list
-
-return the indexes that slices a list of length N with the overlap scale
-"""
-function section_trunc(N, scale)
-    q = div(N, 2)
-    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
-    return be, st
-end
-
-"""
-return the list of correlation function on the whole chain with the two boundaries excluded
-"""
-function correlationagainstsite(mps, j)
-    N = length(mps)
-    lengthlist = collect(1:1:N-2)
-    Correlation = Vector{Float64}(undef, length(lengthlist))
-    @showprogress desc = "correlation" for p in eachindex(lengthlist)
-        Correlation[p] = correlationonlength(mps, lengthlist[p], j)
-    end
-    return lengthlist, Correlation
-end
-
-############################ Tracer ground state ############################
 
 """
 return the average spin  (over gammescale*length spins) against j axis for mps of length in the specif range 
@@ -213,4 +186,21 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     end
     return sweeplist, meanvalues
 end
+
+# ======================================== Correlation
+"""
+return the list of correlation function on the whole chain with the two boundaries excluded
+"""
+function correlationagainstsite(mps, j)
+    N = length(mps)
+    lengthlist = collect(1:1:N-2)
+    Correlation = Vector{Float64}(undef, length(lengthlist))
+    @showprogress desc = "correlation" for p in eachindex(lengthlist)
+        Correlation[p] = correlationonlength(mps, lengthlist[p], j)
+    end
+    return lengthlist, Correlation
+end
+
+
+
 

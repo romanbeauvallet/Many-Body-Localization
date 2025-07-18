@@ -104,7 +104,6 @@ end
 
 
 # ==================================================== Operators
-
 """
 mps -- mps on which you compute the energy
 h -- disorder
@@ -154,7 +153,6 @@ function exactgroundenergy(J=1)
 end
 
 # ============================================ Measure 
-
 """
 psi -- MPS converged on which you make the measurement 
 n -- site measure
@@ -243,7 +241,6 @@ gate -- gates with random disorder
 return the energy of mps at the site sitemeasure 
 """
 function energysiteMPOdisorder(mps, sitemeasure, gate)
-    indexes = inds(gate)
     newgate = replaceprime(gate, 0=>2)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure+1]
@@ -363,7 +360,19 @@ function maxbonddim(mps)
         if s === nothing
             continue
         end
-        maxdim = max(maxdim, dim(s))
+        maxdim = max(maxdim, ITensors.dim(s))
     end
     return maxdim
+end
+
+"""
+N -- length of a vector
+scale -- between 0 and 1, overlap between the sliced list and the original list
+
+return the indexes that slices a list of length N with the overlap scale
+"""
+function section_trunc(N, scale)
+    q = div(N, 2)
+    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
+    return be, st
 end
