@@ -439,5 +439,5 @@ end
 return a full random operator 
 """
 function randomoperator(T, s1, s2)
-    return ITensor(T, s1, s2, prime(s1), prime(s2))
+    return ITensor(T, s1, s2, dag(s1), dag(s2))
 end

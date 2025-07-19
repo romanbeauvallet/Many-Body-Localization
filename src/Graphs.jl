@@ -154,7 +154,6 @@ function magnetagainstsite(mps, j::String, scale)
     return sites, Magnetpersite
 end
 
-
 """
 return the average spin  (over gammescale*length spins) against j axis for mps of length in the specif range 
 """

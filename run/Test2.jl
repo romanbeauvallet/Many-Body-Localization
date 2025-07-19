@@ -16,7 +16,7 @@ using JSON
 
 N = 18
 J = 1
-h = 0
+h = 10
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
@@ -47,28 +47,39 @@ println("gates generated")
 update = MBL.TEBDancilla!(ancilla, gates, betamax, cutoff, δτ)
 println("MPO done")
 ampo = AutoMPO()
-for j in 1:(N - 1)
+for j in 1:(N - 2)
     # ampo .+= (operator_coefficient, operator_name, site_index, ...)
     ampo .+= (1.0, "Sz", j, "Sz", j + 1)
     ampo .+= (0.5, "S+", j, "S-", j + 1)
     ampo .+= (0.5, "S-", j, "S+", j + 1)
     ampo .+= (champ[j], "Sz", j)
 end
-ampo .+= (champ[N], "Sz", N)
+ampo .+= (champ[N-1], "Sz", N-1)
 # Convert the AutoMPO to an MPO
 H = MPO(ampo, smps)
 psi, E = MBL.groundstateDMRG(mps, H, n_sweepDMRG, dmax, cutoff, noise)
 println("update done")
-L = MBL.section_trunc(N, gammescale)
-xdataDMRG = Vector()
-xdata = Vector()
+st, dp= MBL.section_trunc(N-1, gammescale)
+LDMRG = collect(st:dp)
+st, dp= MBL.section_trunc(N, gammescale)
+L = collect(st:dp)
+_, xdataDMRG = magnetagainstsite(psi, j, gammescale)
+_, xdata = magnetagainstsite(update, j, gammescale)
 
-for i in 1:length(L)-1
-    T = randn(2,2,2,2)
-    s1, s2 = siteind(update, L[i]), siteind(update, L[i+1])
-    p1, p2 = siteind(psi, L[i]), siteind(psi, L[i+1])
-    S = MBL.randomoperator(T,s1,s2)
-    P = MBL.randomoperator(T, p1,p2)
-    push!(xdata, energysiteMPOdisorder(update, L[i], S))
-    push!(xdataDMRG, energysiteMPOdisorder(psi, L[i], P))
-end
+gr()
+p = plot()
+scatter!(p, LDMRG, xdataDMRG, label="DMRG")
+scatter!(p, L, xdata)
+display(p)
+
+
+#for i in 1:length(L)-1  
+
+    #T = randn(2,2,2,2)
+    #s1, s2 = siteind(update, L[i]), siteind(update, L[i+1])
+    #p1, p2 = siteind(psi, L[i]), siteind(psi, L[i+1])
+    #S = MBL.randomoperator(T,s1,s2)    
+    #P = MBL.randomoperator(T, p1,p2)
+    #push!(xdata, energysiteMPOdisorder(update, L[i], S))
+    #push!(xdataDMRG, energysiteMPOdisorder(psi, L[i], P))
+#end
