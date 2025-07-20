@@ -15,14 +15,33 @@ scale -- percentage of the chain on which you measure
 
 return the site list and the energy per site 
 """
-function energyagainstsite(mps, h, scale)
+function energyagainstsite(mps::MPS, h, scale, op::String)
     N = length(mps)
     start, stop = section_trunc(N, scale)
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
     Energypersite = Vector(undef, length(sites))
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        Energypersite[i] = energysite(mps, sites[i], h)
+        Energypersite[i] = energysite(mps, sites[i], h, op)
+    end
+    return sites, Energypersite
+end
+
+"""
+mps -- MPS
+h -- disorder
+scale -- percentage of the chain on which you measure
+
+return the site list and the energy per site 
+"""
+function energyagainstsite(mps::MPO, h, scale, op)
+    N = length(mps)
+    start, stop = section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    Energypersite = Vector(undef, length(sites))
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        Energypersite[i] = energysiteMPO(mps, sites[i], h, op)
     end
     return sites, Energypersite
 end
@@ -38,7 +57,7 @@ function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutof
     update = mps_init_sweep
     for p in eachindex(realsweeplist)
         update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax, op)
-        _, magnet = energyagainstsite(update, h, gammescale)
+        _, magnet = energyagainstsite(update, h, gammescale, op)
         meanvalues[p] = mean(magnet)
     end
     return sweeplist, meanvalues
@@ -53,7 +72,7 @@ function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep,
     @showprogress for i in eachindex(sites)
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
         converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax, op)
-        _, averageenergytemp = energyagainstsite(converged, h, gammescale)
+        _, averageenergytemp = energyagainstsite(converged, h, gammescale, op)
         averageenergy[i] = mean(averageenergytemp)
     end
     return sites, averageenergy
@@ -67,10 +86,8 @@ ancilla -- MPS
 
 return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
 """
-function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
-    N = length(ancilla)
-    betalist = collect(0:step:betamax)
-    realbetalist = reverse(push!(diff(betalist), 0))
+function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op)
+    realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     if op == "XY"
         H = hamiltonianXY(ancilla, h, s)
@@ -84,7 +101,7 @@ function energyforbetalistMPO(betamax, step, ancilla, δτ, h, s, cutoff, op)
         update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ)
         Energylist[i] = MBL.energyMPO(update, H) / N
     end
-    return betalist, Energylist
+    return Energylist
 end
 
 """
@@ -115,7 +132,7 @@ function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numb
     EnergyList = Vector(undef, length(timesteplist))
     @showprogress for j in eachindex(timesteplist)
         mpsinit = tebdstepHeisenbergRow!(numbersweep, mpsinit, h, timesteplist[j], cutoff, Dmax, op)
-        e = energysite(mpsinit, site_measure, h)
+        e = energysite(mpsinit, site_measure, h, op)
         EnergyList[j] = e
     end
     return timesteplist, EnergyList

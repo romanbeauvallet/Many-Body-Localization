@@ -16,53 +16,59 @@ using JSON
 N = 50
 J = 1
 h0 = 0
-h = 100
+h = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
 n_sweep = 5000
 cutoff = 1e-15
 dmax = 300
-betamax = 10
-stepbeta = 0.1
+betamaxstep = 10
+betamax = 30
+stepbeta1 = 0.1
+stepbeta2 = 0.5
 Beta = n_sweep * δτ
 gammescale = 0.6
 noise = 1e-8
 n_sweepDMRG = 10
+beta = 40
 j = "z"
 γ = 0.0
 init = 4562
-betalist = collect(0:stepbeta:betamax)
-
+betalist1 = collect(0:stepbeta1:betamaxstep)
+betalist2 = collect(betamaxstep:stepbeta2:betamax)
+betalist = collect(Iterators.flatten((betalist1, betalist2)))
 # ============================== DATA
 ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
-H = hamiltonianHeisenberg(mps, h, smps)
-ydata=Vector{Vector{Float64}}()
-function void()
-    list= [100 for i in 1:n_sweep/100]
-    update = mps
-    for i in list
-        update = tebdstepHeisenbergRow!(i, update, h, δτ, cutoff, dmax, "SS")
-        _ , m = magnetagainstsite(update, j, gammescale)
-        push!(ydata, m)
-    end
-    return ydata
-end
+Hamiltonian = MBL.hamiltonianXY(mps, h, smps)
+###Energy
 
-ydata = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, j)
-matrix = abs.(hcat(ydata...))
+#energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
+gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
+update = MBL.TEBDancilla!(ancilla, gates, 40, cutoff, δτ)
+xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
+@show length(energybetaMPO)
+###DMRG
 st, dp = MBL.section_trunc(N, gammescale)
-L = collect(st:dp)
-inter = matrix./maximum(matrix)
+L = collect(st:1:dp)
+psi, H = MBL.groundstateDMRG(mps, Hamiltonian, n_sweepDMRG, dmax, cutoff, noise)
+xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
+
+###Exact energy
+
+exact = MBL.exactenergyXY(beta, h, γ)
+exactDMRG = mean(exactpersite)
+exactpersite = mean(energysiteMPO)
+###Graphes
+
 gr()
-
-heatmap(betalist, L, inter,
-        xlabel="β", ylabel="L",
-        title="Magnétisation",
-        colorbar_title="M",
-        aspect_ratio=:auto,
-        c=:viridis)  # palette de couleur
-#scatter!(p, xdata2, ydata2, label ="TEBD step=0.5")
-#hline!(p, [1/4-log(2)], label="exact energy at 0K without disorder")
-
+p1 = plot()
+scatter!(p1, betalist, energybetaMPO, label="TEBD+purification")
+scatter!(p1, xdata2, exactpersite, label="DMRG energy on each site", xlabel="site index", ylabel="Energy of each site", title="N=$N, h=$h, δτ=$δτ, β=$β, Model XY", titlefont=font("Computer Modern", 16), legendfont=font("Computer Modern", 13))
+scatter!(p1, [10], [exact],marker=(:star5, 5), label="Exact energy per site")
+scatter!(p1, [10], [exactDMRG],marker=(:star5, 5), label="DMRG energy per site")
+scatter!(p1, [10], [exactpersite],marker=(:star5, 5), label="TEBD energy per site")
+#hline!(p1, [H], label="DMRG MPO/N")
+display(p1)
+savefig("run/Plots/verifenergypersiteXY.pdf")

@@ -32,20 +32,17 @@ map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
 N = input_data["N"]
 J = input_data["J"]
+γ = input_data["gamma"]
 D0 = input_data["D0"]
 h = input_data["disorder"]
-gammelength = input_data["length range"]
 δτ = input_data["Trotter-Suzuki step"]
 Dmax = input_data["max bond dimension"]
-gammesweep = input_data["nsweep range"]
 gammescale = input_data["gammescale"]
 cutoff = input_data["cutoff"]
-n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
-init = input_data["initialization"]
-initseed = input_data["graine"]
-stepbeta = input_data["pas de beta"]
-betamax = input_data["limite beta"]
+noise = input_data["noise"]
+sweep_DMRG = input_data["number sweep dmrg"]
+beta = input_data["beta fixe"]
 savefile = String(input_data["savefile"])
 
 lengthlist = collect(gammelength[1]:gammelength[3]:gammelength[2])
@@ -58,30 +55,25 @@ metadata = Dict{String,Any}(
     "initial bond dimension" => D0,
     "Dmax" => Dmax,
     "J" => J,
+    "beta fixe" => beta,
     "axis spin" => j,
-    "length list" => lengthlist,
     "cutoff" => cutoff,
     "disorder" => h,
+    "n_sweepDMRG" => sweep_DMRG,
     "proportion spin average" => gammescale,
-    "maximum bond dimension per tebd step" => nothing,
-    "type d'initialisation" => init,
-    "seed for random" => initseed,
-    "pas pour beta" => stepbeta,
-    "limite max pour beta" => betamax
+    "maximum bond dimension per tebd step" => nothing
 )
 println("\nmetadata:")
 display(metadata)
 
 results = Dict{String,Any}(
-    "energy sweep list no disorder" => nothing,
-    "magnetization sweep list no disorder" => nothing,
-    "energy sweep list random disorder" => nothing,
-    "magnetization sweep list random disorder" => nothing,
+    "energy sites tebd" => nothing,
+    "energy sites dmrg" => nothing,
+    "exact energy" => nothing,
+    "exact energy exact" => nothing,
+    "exact energy dmrg" => nothing, 
+    "liste sites" => nothing
 )
-
-ancilla, s = MBL.AncillaMPO(N)
-betalist = collect(0:stepbeta:betamax)
-realbetalist = pushfirst!(diff(betalist), 0)
 
 Energylist = Vector()
 AverageMagnetlist = Vector()
@@ -108,15 +100,37 @@ function voiddisorder()
         println("\nResults saved in $savefile")
         flush(stdout)
     end
-
-
-
 end
 
 function void()
+    ancilla, s = MBL.AncillaMPO(N)
+    mps, smps = neelstate(N)
+    Hamiltonian = MBL.hamiltonianXY(mps, h, smps)
+    ###Energy
 
+    #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
+    gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
+    println("gate generated")
+    update = MBL.TEBDancilla!(ancilla, gates, beta, cutoff, δτ)
+    println("update tebd done")
+    xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
+    println("measure energy per site done")
+    results["energy sites tebd"] = energysiteMPO
+    ###DMRG
+    results["liste sites"] = xdata
+    psi, H = MBL.groundstateDMRG(mps, Hamiltonian, sweep_DMRG, dmax, cutoff, noise)
+    xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
+    results["energy sites dmrg"] = exactpersite
+    ###Exact energy
+
+    exact = MBL.exactenergyXY(beta, h, γ)
+    results["exact energy exact"] = exact  
+    exactDMRG = mean(exactpersite)
+    results["exact energy dmrg"] = exactDMRG
+    exactpersite = mean(energysiteMPO)
+    results["exact energy"] = exactpersite
 end
 
-voiddisorder()
 void()
+
 println("simulation finie")

@@ -223,15 +223,22 @@ sitemeasure -- index of the site
 
 return the energy on the site sitemeasure
 """
-function energysite(mps, sitemeasure, h)
+function energysite(mps, sitemeasure, h, operator::String)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
-    gate =
-        1 / 2 * op("S+", sn) * op("S-", snn) +
-        1 / 2 * op("S-", sn) * op("S+", snn) +
-        op("Sz", sn) * op("Sz", snn) +
-        h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    if operator == "SS"
+        gate =
+            1 / 2 * op("S+", sn) * op("S-", snn) +
+            1 / 2 * op("S-", sn) * op("S+", snn) +
+            op("Sz", sn) * op("Sz", snn) +
+            h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    elseif operator == "XY"
+        gate =
+            1 / 2 * op("S+", sn) * op("S-", snn) +
+            1 / 2 * op("S-", sn) * op("S+", snn) +
+            h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
+    end
     inter = copy[sitemeasure] * copy[sitemeasure+1]
     normalize!(inter)
     e = scalar(dag(prime(inter, "Site")) * gate * inter)
