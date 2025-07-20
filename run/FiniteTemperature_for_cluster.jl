@@ -1,5 +1,4 @@
 #!usr/bin/env julia
-
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ############### Librairies #################
 using MBL
@@ -44,8 +43,6 @@ noise = input_data["noise"]
 sweep_DMRG = input_data["number sweep dmrg"]
 beta = input_data["beta fixe"]
 savefile = String(input_data["savefile"])
-
-lengthlist = collect(gammelength[1]:gammelength[3]:gammelength[2])
 
 # ===================== data 
 
