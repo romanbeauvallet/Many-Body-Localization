@@ -79,29 +79,6 @@ Energylist = Vector()
 AverageMagnetlist = Vector()
 Magnetlist = Vector()
 
-function voiddisorder()
-    update = ancilla
-    gatesmeasure, gatesevolve = evolutionwithrandomdisordergates(initseed, update, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
-        _, E = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-        push!(Energylist, E)
-        results["energy sweep list random disorder"] = Energylist
-        _, M =
-            push!(Magnetlist, M)
-
-        #####data saving
-        output_data = merge(metadata, results)
-        #savefile = get_savefile(output_data)
-        open(savefile, "w") do io
-            JSON.print(io, output_data, 4)
-        end
-        println("\nResults saved in $savefile")
-        flush(stdout)
-    end
-end
-
 function void()
     ancilla, s = MBL.AncillaMPO(N)
     mps, smps = neelstate(N)
