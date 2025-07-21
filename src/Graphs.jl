@@ -125,6 +125,22 @@ function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, ga
 end
 
 """
+
+"""
+function trackonesite(betalist, ancilla, δτ, h, s, cutoff, sitemeasure, init::Int)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        Energylist[i] = energysiteMPOdisorder(update, sitemeasure, gatesmeasure[sitemeasure])
+    end
+    return Energylist
+end
+
+"""
 return the energy list of the site i with respect to gates time step
 """
 function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax, op::String)
@@ -147,7 +163,7 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
-    gatesmeasure, gatesevolve, _ = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
@@ -211,7 +227,7 @@ function magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     realbetalist = pushfirst!(diff(betalist), 0)
     Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
     update = ancilla
-    _, gatesevolve, _ = evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    _, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
