@@ -9,5 +9,5 @@ export tebdevolutionrow!, gateTrotterSuzukirow
 export magnetagainstsite, energyagainstdeltatime, energyagainstsite
 export maxbonddim
 export correlationSpinoperator, correlationonlength, correlationagainstsite
-
+export TEBDancilla!, groundstateDMRG
 end # module MBL

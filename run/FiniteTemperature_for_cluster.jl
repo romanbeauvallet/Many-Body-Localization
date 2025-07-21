@@ -87,7 +87,7 @@ function void()
     #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
     gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
     println("gate generated")
-    update = MBL.TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
+    update = TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     println("update tebd done")
     xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
     results["energy sites tebd"] = energysiteMPO
@@ -97,7 +97,7 @@ function void()
     println("measure magnet per site done")
     ###DMRG
     results["liste sites"] = xdata
-    psi, H = MBL.groundstateDMRG(mps, Hamiltonian, sweep_DMRG, dmax, cutoff, noise)
+    psi, H = groundstateDMRG(mps, Hamiltonian, sweep_DMRG, dmax, cutoff, noise)
     xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
     _, magnetDMRG = magnetagainstsite(psi, "z", gammescale)
     results["energy sites dmrg"] = exactpersite
