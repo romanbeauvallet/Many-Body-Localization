@@ -103,6 +103,14 @@ function void()
     results["exact energy dmrg"] = exactDMRG
     exactpersite = mean(energysiteMPO)
     results["exact energy"] = exactpersite
+     #####data saving
+    output_data = merge(metadata, results)
+    #savefile = get_savefile(output_data)
+    open(savefile, "w") do io
+        JSON.print(io, output_data, 4)
+    end
+    println("\nResults saved in $savefile")
+    flush(stdout)
 end
 
 void()
