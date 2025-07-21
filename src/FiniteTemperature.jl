@@ -84,6 +84,7 @@ end
 β -- inverse temperature
 h -- disorder
 γ -- proportion of XX and YY in the model
+
 exact energy at temperature beta for XY model at temperature β with disorder h 
 """
 function exactenergyXY(β, h, γ=0.0)
@@ -101,7 +102,7 @@ spectre -- vap de l'Hamiltonien obtained by exact diagonalization
 β -- inverse temperature
 L -- number of sites in the Heinsenberg chain
 
-return the exact energy 
+return the exact energy from the exact diagonalization, could be for any Hamiltonian
 """
 function energyexact(spectre, β, L)
     weights = exp.(-β .* spectre)
