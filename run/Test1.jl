@@ -46,9 +46,12 @@ Hamiltonian = MBL.hamiltonianXY(mps, h, smps)
 
 #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
 gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
-update = MBL.TEBDancilla!(ancilla, gates, 40, cutoff, δτ)
+update = MBL.TEBDancilla!(ancilla, gates, 0.1, cutoff, δτ, dmax)
+_, magnet = magnetagainstsite(update, "z", gammescale)
+_, magnetique = magnetagainstsite(mps, "z", gammescale)
+
+println("done")
 xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
-@show length(energybetaMPO)
 ###DMRG
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:1:dp)

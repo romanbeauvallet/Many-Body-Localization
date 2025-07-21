@@ -69,7 +69,9 @@ results = Dict{String,Any}(
     "exact energy" => nothing,
     "exact energy exact" => nothing,
     "exact energy dmrg" => nothing, 
-    "liste sites" => nothing
+    "liste sites" => nothing,
+    "magnet sites tebd" => nothing,
+    "magnet sites dmrg" => nothing
 )
 
 Energylist = Vector()
@@ -85,16 +87,22 @@ function void()
     #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
     gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
     println("gate generated")
-    update = MBL.TEBDancilla!(ancilla, gates, beta, cutoff, δτ)
+    update = MBL.TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     println("update tebd done")
     xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
-    println("measure energy per site done")
     results["energy sites tebd"] = energysiteMPO
+    println("measure energy per site done")
+    _, magnetsiteMPO = magnetagainstsite(update, "z", gammescale)
+    results["magnet sites tebd"] = magnetsiteMPO
+    println("measure magnet per site done")
     ###DMRG
     results["liste sites"] = xdata
     psi, H = MBL.groundstateDMRG(mps, Hamiltonian, sweep_DMRG, dmax, cutoff, noise)
     xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
+    _, magnetDMRG = magnetagainstsite(psi, "z", gammescale)
     results["energy sites dmrg"] = exactpersite
+    results["magnet sites tebd"] = magnetDMRG
+    println("DMRG done")
     ###Exact energy
 
     exact = MBL.exactenergyXY(beta, h, γ)
