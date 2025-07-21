@@ -66,8 +66,9 @@ function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutof
     realsweeplist[1] = gammesweep[1]
     meanvalues = Vector(undef, length(sweeplist))
     update = mps_init_sweep
+    gates = gateTrotterSuzukirow(mps_init_sweep, h, δτ, op)
     for p in eachindex(realsweeplist)
-        update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax, op)
+        update = tebdevolutionrow!(realsweeplist[p], update, gates, cutoff, Dmax)
         _, magnet = energyagainstsite(update, h, gammescale, op)
         meanvalues[p] = mean(magnet)
     end
@@ -82,7 +83,8 @@ function energyaverageagainstlength(gammelength::Tuple, gammescale, numbersweep,
     averageenergy = Vector(undef, length(sites))
     @showprogress for i in eachindex(sites)
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
-        converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax, op)
+        gates = gateTrotterSuzukirow(mpstransit, h, δτ, op)
+        converged = tebdevolutionrow!(numbersweep, mpstransit, gates, cutoff, Dmax)
         _, averageenergytemp = energyagainstsite(converged, h, gammescale, op)
         averageenergy[i] = mean(averageenergytemp)
     end
@@ -97,7 +99,7 @@ ancilla -- MPS
 
 return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
 """
-function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op)
+function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     if op == "XY"
@@ -109,7 +111,7 @@ function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op)
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ, dmax)
         Energylist[i] = MBL.energyMPO(update, H) / N
     end
     return Energylist
@@ -122,14 +124,14 @@ ancilla -- MPS
 
 return the MPS average energy measured with gates on gammescale*length(MPS) number of sites taken from the MPS center
 """
-function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, gammescale)
+function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, gammescale, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[i] = energyagainstsiteMPO(update, h, gammescale, op)
     end
     return Energylist
@@ -138,11 +140,13 @@ end
 """
 return the energy list of the site i with respect to gates time step
 """
-function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax, op::String)
+function energyagainstdeltatime(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax, op::String, h)
     timesteplist = reverse(collect(gamme[1]:step:gamme[2]))
     EnergyList = Vector(undef, length(timesteplist))
+    update = mpsinit
     @showprogress for j in eachindex(timesteplist)
-        mpsinit = tebdstepHeisenbergRow!(numbersweep, mpsinit, h, timesteplist[j], cutoff, Dmax, op)
+        gates = gateTrotterSuzukirow(update, h, timesteplist[i], op)
+        update = tebdevolutionrow!(numbersweep, update, gates, cutoff, Dmax)
         e = energysite(mpsinit, site_measure, h, op)
         EnergyList[j] = e
     end
@@ -154,14 +158,14 @@ end
 """
 return the betalist and the energy list with a random uniform on each site
 """
-function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init)
+function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
     gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
     end
     return Energylist
@@ -179,14 +183,14 @@ init -- valeur de la seed
 
 return la liste des énergies sur les sites de mesures pour une liste de valeur de beta
 """
-function trackonesite(betalist, ancilla, δτ, h, s, cutoff, sitemeasure, init::Int)
+function trackonesite(betalist, ancilla, δτ, h, s, cutoff, sitemeasure, init::Int, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Energylist = Vector{}(undef, length(realbetalist))
     update = ancilla
     gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         Energylist[i] = energysiteMPOdisorder(update, sitemeasure, gatesmeasure[sitemeasure])
     end
     return Energylist
@@ -216,7 +220,8 @@ function magnetaverageagainstlength(j::String, gammelength::Tuple, gammescale, n
     for i in eachindex(sites)
         @show i, gammelength[2], sites[i]
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
-        converged = tebdstepHeisenbergRow!(numbersweep, mpstransit, h, δτ, cutoff, Dmax, op)
+        gates = gateTrotterSuzukirow(mpstransit, h, δτ, op)
+        converged = tebdevolutionrow!(numbersweep, mpstransit, gates, cutoff, Dmax)
         _, averagespintemp = magnetagainstsite(converged, j, gammescale)
         averagespin[i] = mean(averagespintemp)
     end
@@ -233,7 +238,8 @@ function magnetaverageagainstsweep(j::String, mps_init_sweep, gammesweep, gammes
     meanvalues = Vector(undef, length(realsweeplist))
     update = mps_init_sweep
     for p in eachindex(realsweeplist)
-        update = tebdstepHeisenbergRow!(realsweeplist[p], update, h, δτ, cutoff, Dmax, op)
+        gates = gateTrotterSuzukirow(update, h, δτ, op)
+        update = tebdevolutionrow!(realsweeplist[p], update, gates, cutoff, Dmax)
         _, magnet = magnetagainstsite(update, j, gammescale)
         meanvalues[p] = mean(magnet)
     end
@@ -243,14 +249,14 @@ end
 """
 return the betalist and the energy list with a random uniform on each site
 """
-function magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, j::String)
+function magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, j::String, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
     update = ancilla
     _, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Magnetlist[i] = magnetagainstsite(update, j, gammescale)
     end
     return Magnetlist, disorder
@@ -259,15 +265,32 @@ end
 """
 
 """
-function magnetforbestalist(betalist, ancilla, δτ, h, s, cutoff, gammescale, op, j::String)
+function magnetforbestalist(betalist, ancilla::MPO, δτ, h, s, cutoff, gammescale, op, j::String, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
     update = ancilla
     gatesevolve = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Magnetlist[i] = magnetagainstsite(ancilla, j, gammescale)
+    end
+    return Magnetlist
+end
+
+"""
+
+"""
+function magnetforbestalist(betalist, ancilla::MPS, δτ, h, cutoff, gammescale, op, j::String, dmax)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
+    update = ancilla
+    gatesevolve = gateTrotterSuzukirow(update, h, δτ, op)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        nsweep = floor(realbetalist[i] / 2 / δτ)
+        update = tebdevolutionrow!(nsweep, update, gatesevolve, cutoff, dmax)
+        _, Magnetlist[i] = magnetagainstsite(update, j, gammescale)
     end
     return Magnetlist
 end

@@ -67,42 +67,30 @@ end
 """
 return the vector of Trotter Suzuki gates for Heinsenberg model in a row that means gates are in the order: (1,2) ; (2,3) ; ...
 """
-function gateTrotterSuzukirow(mps, h, δτ)
+function gateTrotterSuzukirow(mps, h, δτ, op::String)
     N = length(mps)
     s = siteinds(mps)
-    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
-    append!(gates, reverse(gates))
-    return gates
-end
-
-"""
-return the vector of Trotter Suzuki gates for XY model in a row that means gates are in the order: (1,2) ; (2,3) ; ...
-"""
-function gateTrotterSuzukirowXY(mps, h, δτ)
-    N = length(mps)
-    s = siteinds(mps)
-    gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
-    append!(gates, reverse(gates))
-    return gates
+    if op == "SS"
+        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        append!(gates, reverse(gates))
+        return gates
+    elseif op == "XY"
+        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        append!(gates, reverse(gates))
+        return gates
+    end
 end
 
 """
 return the converged mps with the row application of gates
 """
-function tebdstepHeisenbergRow!(nsweep, mps, h, δτ, cutoff, Dmax, op::String)
-    if op == "SS"
-        gate = gateTrotterSuzukirow(mps, h, δτ)
-    elseif op == "XY"
-        gate = gateTrotterSuzukirowXY(mps, h, δτ)
-    end
+function tebdevolutionrow!(nsweep, mps, gates, cutoff, Dmax)
     @showprogress desc = "tebd steps" for i in 1:nsweep
-        mps = apply(gate, mps; cutoff, maxdim=Dmax)
+        mps = apply(gates, mps; cutoff, maxdim=Dmax)
         normalize!(mps)
     end
     return mps
 end
-
-
 # ==================================================== Operators
 """
 mps -- mps on which you compute the energy

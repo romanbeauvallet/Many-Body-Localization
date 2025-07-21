@@ -57,13 +57,13 @@ beta -- temperature goal
 
 return the updated MPS at the temperature beta
 """
-function TEBDancilla!(ancilla, gates, beta, cutoff, δτ)
+function TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     if δτ <= 0
         return "δτ must be non negative"
     end
     k = floor(beta / δτ)
     @showprogress desc="evolution in temperature" for i in 1:1:k
-        ancilla = apply(gates, ancilla; cutoff)
+        ancilla = apply(gates, ancilla; cutoff, maxdim=Dmax)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
     end

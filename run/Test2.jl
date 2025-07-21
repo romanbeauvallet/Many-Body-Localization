@@ -15,7 +15,8 @@ using JSON
 
 N = 20
 J = 1
-h = 100
+h = 10
+h0 = 0
 δτ = 1e-3
 D0 = 10
 site_measure = div(N, 2)
@@ -40,22 +41,27 @@ input = JSON.parse(json_string)
 
 ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
-gatesmeasure, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(seed1, ancilla, s, h, δτ)
-Hamiltonian = MBL.hamiltonianXY(mps, h, smps)
+rho = outer(mps, dag(mps))
+@show typeof(rho)
+@show rho[5]
+@show rho
 println("init done")
-gates = MBL.gatesTEBDancilla(ancilla, h, δτ, s, "XY")
-update = MBL.TEBDancilla!(ancilla, gates, 20, cutoff, δτ)
-xdata, energysiteMPO = magnetagainstsite(ancilla, "z", gammescale)
+#ydata, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, seed1, "z")
+ydata2 = MBL.magnetforbestalist(betalist, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax)
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:1:dp)
+@show magnetagainstsite(ancilla, "z", gammescale)
+@show magnetagainstsite(mps, "z", gammescale)
 
-psi, e = MBL.groundstateDMRG(mps, Hamiltonian, n_sweepDMRG, dmax, cutoff, noise)
-xdata, exactenergysite = magnetagainstsite(psi, "z", gammescale)
+#psi, e = MBL.groundstateDMRG(mps, Hamiltonian, n_sweepDMRG, dmax, cutoff, noise)
+#xdata, exactenergysite = magnetagainstsite(psi, "z", gammescale)
 
 #@show update1[5] == update2[5]
-
 gr()
-p = plot()
-scatter!(p, [10], [mean(energysiteMPO)], label="TEBD", xlabel="chain site", ylabel="magnetization per site")
-scatter!(p, [10], [mean(exactenergysite)], label = "DMRG")
-display(p)
+heatmap(betalist, L, hcat(ydata2...),
+    xlabel = "β",
+    ylabel = "site list",
+    title = "N=$N, cutoff=$cutoff, δτ=$δτ, h=$h" ,
+    colorbar = true,
+    color = :viridis  # Palette de couleurs
+)
