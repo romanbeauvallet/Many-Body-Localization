@@ -13,11 +13,10 @@ using QuadGK
 using Random
 using Distributions
 ################## Functions #####################
-
 """
 N -- number of sites
 
-return an initialized ancilla of length N 
+return an initialized ancilla of length N with conserved quantum numbers
 """
 function AncillaMPO(N)
     s = ITensors.siteinds("S=1/2", N; conserve_qns=true)
@@ -32,7 +31,7 @@ s -- Index of ancilla
 op -- String, to choose which model you want (Heisenberg or XY)
 δτ -- step of Trotter-Suzuki
 
-return the vector of gates (ITensor)
+return the vector of gates (ITensor type)
 """
 function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)

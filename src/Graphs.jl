@@ -12,6 +12,7 @@ using Statistics
 mps -- MPS
 h -- disorder
 scale -- percentage of the chain on which you measure
+op -- choose between Heisenberg Hamiltonian and XY model
 
 return the site list and the energy per site 
 """
@@ -28,9 +29,10 @@ function energyagainstsite(mps::MPS, h, scale, op::String)
 end
 
 """
-mps -- MPS
+mps -- ITensorMPS.MPO type
 h -- disorder
 scale -- percentage of the chain on which you measure
+op -- choose between Heisenberg Hamiltonian and XY model
 
 return the site list and the energy per site 
 """
@@ -47,6 +49,15 @@ function energyagainstsite(mps::MPO, h, scale, op)
 end
 
 """
+mps_init_sweep -- initial boundary mps 
+gammesweep -- start and end of the number of TEBD sweep with the step [begin:end:step]
+gammescale -- 0<x<1 in order to compute the operator on gammescale*length(mps_init_sweep) from the center
+cutoff -- cutoff in the svd 
+Dmax -- maximal bond dimension
+δτ -- Trotter Suzuki step 
+h -- disorder 
+op -- choose between Heisenberg Hamiltonian and XY model
+
 return the average energy on x% of the total number of spins with respect to number of spins
 """
 function energyaverageagainstsweep(mps_init_sweep, gammesweep, gammescale, cutoff, Dmax, δτ, h, op::String)
@@ -125,22 +136,6 @@ function energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, op::String, ga
 end
 
 """
-
-"""
-function trackonesite(betalist, ancilla, δτ, h, s, cutoff, sitemeasure, init::Int)
-    realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
-    update = ancilla
-    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
-        Energylist[i] = energysiteMPOdisorder(update, sitemeasure, gatesmeasure[sitemeasure])
-    end
-    return Energylist
-end
-
-"""
 return the energy list of the site i with respect to gates time step
 """
 function energyagainstdeltatime!(site_measure, gamme::Tuple, mpsinit, step, numbersweep, cutoff, Dmax, op::String)
@@ -168,6 +163,31 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
         _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+    end
+    return Energylist
+end
+
+"""
+betalist -- list des beta 
+ancilla -- boudary mps
+δτ -- step de Trotter Suzuki
+h -- disorder
+s -- site index
+cutoff -- cutoff de la svd
+sitemeasure -- site sur lequel on mesure
+init -- valeur de la seed
+
+return la liste des énergies sur les sites de mesures pour une liste de valeur de beta
+"""
+function trackonesite(betalist, ancilla, δτ, h, s, cutoff, sitemeasure, init::Int)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Energylist = Vector{}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
+        Energylist[i] = energysiteMPOdisorder(update, sitemeasure, gatesmeasure[sitemeasure])
     end
     return Energylist
 end
@@ -227,17 +247,17 @@ function magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     realbetalist = pushfirst!(diff(betalist), 0)
     Magnetlist = Vector{Vector{Float64}}(undef, length(realbetalist))
     update = ancilla
-    _, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    _, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ)
-        _, Magnetlist[i] = magnetagainstsite(ancilla, j, gammescale)
+        _, Magnetlist[i] = magnetagainstsite(update, j, gammescale)
     end
-    return Magnetlist
+    return Magnetlist, disorder
 end
 
 """
-return the betalist and the energy list with a random uniform on each site
+
 """
 function magnetforbestalist(betalist, ancilla, δτ, h, s, cutoff, gammescale, op, j::String)
     realbetalist = pushfirst!(diff(betalist), 0)
