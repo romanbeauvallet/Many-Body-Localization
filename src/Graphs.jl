@@ -9,14 +9,14 @@ using Statistics
 
 # ============================================= Energy
 """
-mps -- MPS
+mps -- MPS or MPO
 h -- disorder
 scale -- percentage of the chain on which you measure
 op -- choose between Heisenberg Hamiltonian and XY model
 
 return the site list and the energy per site 
 """
-function energyagainstsite(mps::MPS, h, scale, op::String)
+function energyagainstsite(mps, h, scale, op::String)
     N = length(mps)
     start, stop = section_trunc(N, scale)
     stop = stop < N - 2 ? stop : N - 2
@@ -29,23 +29,46 @@ function energyagainstsite(mps::MPS, h, scale, op::String)
 end
 
 """
-mps -- ITensorMPS.MPO type
-h -- disorder
-scale -- percentage of the chain on which you measure
-op -- choose between Heisenberg Hamiltonian and XY model
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
 
-return the site list and the energy per site 
+return the MPS average energy for the model op, measured with gates 
 """
-function energyagainstsite(mps::MPO, h, scale, op)
+function energyagainstsiteMPO(mps, h, scale, op::String)
     N = length(mps)
-    start, stop = section_trunc(N, scale)
+    start, stop = MBL.section_trunc(N, scale)
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
+    #@show sites
     Energypersite = Vector(undef, length(sites))
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        Energypersite[i] = energysiteMPO(mps, sites[i], h, op)
+        #@show i 
+        Energypersite[i] = energysite(mps, sites[i], h, op)
     end
-    return sites, Energypersite
+    return sites, mean(Energypersite)
+end
+
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
+function energyagainstsiteMPOdisorder(mps, gates, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Energypersite = Vector(undef, length(sites))
+    update = mps
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
+    end
+    return sites, mean(Energypersite)
 end
 
 """
@@ -294,6 +317,29 @@ function magnetforbestalist(betalist, ancilla::MPS, δτ, h, cutoff, gammescale,
     end
     return Magnetlist
 end
+
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
+function magnetagainstsiteMPOdisorder(mps, gates, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Magnetpersite = Vector(undef, length(sites))
+    update = mps
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Magnetpersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
+    end
+    return sites, Magnetpersite
+end
+
 # ======================================== Correlation
 """
 return the list of correlation function on the whole chain with the two boundaries excluded

@@ -95,62 +95,68 @@ end
 """
 mps -- mps on which you compute the energy
 h -- disorder
+s -- index of the mps
+op -- choose between the Heisenberg and the XY model
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianHeisenberg(mps, h::Float64, s)
+function operator(mps, h::Float64, s, op::String)
     N = length(mps)
     ampo = AutoMPO()
-    for j in 1:N-1
-        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
-        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
-        add!(ampo, 1, "Sz", j, "Sz", j + 1)
-        add!(ampo, h, "Sz", j)
+    if op == "SS"
+        for j in 1:N-1
+            add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+            add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+            add!(ampo, 1, "Sz", j, "Sz", j + 1)
+            add!(ampo, h, "Sz", j)
+        end
+        add!(ampo, h, "Sz", N)
+        H = MPO(ampo, s)
+        return H
+    elseif op == "XY"
+        for j in 1:N-1
+            add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+            add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+            add!(ampo, h, "Sz", j)
+        end
+        add!(ampo, h, "Sz", N)
+        H = MPO(ampo, s)
+        return H
     end
-    add!(ampo, h, "Sz", N)
-    H = MPO(ampo, s)
-    return H
 end
 
 """
 mps -- mps on which you compute the energy
 h -- disorder
+s -- index of the mps
+op -- choose between the Heisenberg and the XY model
 
 return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
 """
-function hamiltonianHeisenberg(mps, h::Vector, s)
+function operator(mps, h::Vector, s, op::String)
     N = length(mps)
     ampo = AutoMPO()
-    for j in 1:N-1
-        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
-        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
-        add!(ampo, 1, "Sz", j, "Sz", j + 1)
-        add!(ampo, h[j], "Sz", j)
+    if op == "SS"
+        for j in 1:N-1
+            add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+            add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+            add!(ampo, 1, "Sz", j, "Sz", j + 1)
+            add!(ampo, h[j], "Sz", j)
+        end
+        add!(ampo, h[N], "Sz", N)
+        H = MPO(ampo, s)
+        return H
+    elseif op == "XY"
+        for j in 1:N-1
+            add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
+            add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
+            add!(ampo, h[j], "Sz", j)
+        end
+        add!(ampo, h[N], "Sz", N)
+        H = MPO(ampo, s)
+        return H
     end
-    add!(ampo, h[N], "Sz", N)
-    H = MPO(ampo, s)
-    return H
 end
-
-"""
-mps -- mps on which you compute the energy
-h -- disorder
-
-return the Heisenberg Hamiltonian with disorder with the ITensorMPS.MPO type 
-"""
-function hamiltonianXY(mps, h, s)
-    N = length(mps)
-    ampo = AutoMPO()
-    for j in 1:N-1
-        add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
-        add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
-        add!(ampo, h, "Sz", j)
-    end
-    add!(ampo, h, "Sz", N)
-    H = MPO(ampo, s)
-    return H
-end
-
 
 """
 exact energy of the 1D Heisenberg Hamiltonian ground state
@@ -163,6 +169,7 @@ end
 """
 psi -- MPS converged on which you make the measurement 
 n -- site measure
+j -- choose the axis (WARNING x and y doesnt work with quantum numbers)
 
 return the Sz value on the site n 
 """
@@ -177,8 +184,9 @@ end
 """
 psi -- MPS converged on which you make the measurement 
 n -- site measure
+j -- choose the axis (WARNING x and y doesnt work with quantum numbers)
 
-return the Sz value on the site n 
+return the Sz expectation value on the site n 
 """
 function measure_S(psi::MPO, n, j::String)
     string = "S" * j
@@ -211,7 +219,7 @@ sitemeasure -- index of the site
 
 return the energy on the site sitemeasure
 """
-function energysite(mps, sitemeasure, h, operator::String)
+function energysite(mps::MPS, sitemeasure, h, operator::String)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
@@ -234,13 +242,13 @@ function energysite(mps, sitemeasure, h, operator::String)
 end
 
 """
-mps -- MPS
+mps -- MPO
 sitemeasure -- index in the mps of the site you want to compute the energy
 h -- disorder
 
 return the energy of mps at the site sitemeasure 
 """
-function energysiteMPO(mps, sitemeasure, h, operateur::String)
+function energysite(mps::MPO, sitemeasure, h, operateur::String)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
@@ -264,13 +272,13 @@ function energysiteMPO(mps, sitemeasure, h, operateur::String)
 end
 
 """
-mps -- MPS
+mps -- MPO
 sitemeasure -- index in the mps of the site you want to compute the energy
 gate -- gates with random disorder
 
 return the energy of mps at the site sitemeasure 
 """
-function energysiteMPOdisorder(mps, sitemeasure, gate)
+function energysiteMPOdisorder(mps::MPO, sitemeasure, gate)
     newgate = replaceprime(gate, 0 => 2)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure+1]
@@ -333,75 +341,11 @@ function correlationonlength(mps, k, j)
     return mean(Listintercorrel)
 end
 
-"""
-mps -- MPS
-h -- disorder 
-scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
-
-return the MPS average energy for the model op, measured with gates 
-"""
-function energyagainstsiteMPO(mps, h, scale, op::String)
-    N = length(mps)
-    start, stop = MBL.section_trunc(N, scale)
-    stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:1:stop)
-    #@show sites
-    Energypersite = Vector(undef, length(sites))
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        #@show i 
-        Energypersite[i] = energysiteMPO(mps, sites[i], h, op)
-    end
-    return sites, mean(Energypersite)
-end
-
-"""
-mps -- MPS
-h -- disorder 
-scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
-
-return the MPS average energy for the model op, measured with gates 
-"""
-function energyagainstsiteMPOdisorder(mps, gates, scale)
-    N = length(mps)
-    start, stop = MBL.section_trunc(N, scale)
-    stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:1:stop)
-    #@show sites
-    Energypersite = Vector(undef, length(sites))
-    update = mps
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        #@show i 
-        Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
-    end
-    return sites, mean(Energypersite)
-end
-
-"""
-mps -- MPS
-h -- disorder 
-scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
-
-return the MPS average energy for the model op, measured with gates 
-"""
-function magnetagainstsiteMPOdisorder(mps, gates, scale)
-    N = length(mps)
-    start, stop = MBL.section_trunc(N, scale)
-    stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:1:stop)
-    #@show sites
-    Magnetpersite = Vector(undef, length(sites))
-    update = mps
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        #@show i 
-        Magnetpersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
-    end
-    return sites, Magnetpersite
-end
-
 # =========================================== Else
 """
-return the max bond dimension in the mps
+mps -- mps you want to have the max bon dimension 
 
+return the max bond dimension in the mps
 """
 function maxbonddim(mps)
     maxdim = 0
@@ -431,6 +375,10 @@ function section_trunc(N, scale)
 end
 
 """
+T -- a random array 
+s1 -- index 
+s2 -- index
+
 return a full random operator 
 """
 function randomoperator(T, s1, s2)
