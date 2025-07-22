@@ -1,16 +1,24 @@
 #!usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ################ Librairies #############
-using ITensors
-using MBL
-using ProgressMeter
-using Plots
-using ITensorMPS
-using Statistics
+using Distributed
 using Base.Threads
 using LaTeXStrings
 println("Nombre de threads disponibles : ", nthreads())
 using JSON
+@everywhere begin
+    using ITensors
+    using MBL
+    using ProgressMeter
+    using Plots
+    using ITensorMPS
+    using Statistics
+end
+
+# Ajouter des processus seulement si tu es en local
+if nprocs() == 1
+    addprocs(4)  # ne sera pas utilisé sur SLURM
+end
 ################ Parameters ###############
 
 N = 20
@@ -41,12 +49,10 @@ input = JSON.parse(json_string)
 
 ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
-rho = outer(mps, dag(mps))
-@show typeof(rho)
-@show rho[5]
-@show rho
+
 println("init done")
 #ydata, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, seed1, "z")
+result = pmap(t -> MBL.magnetforbestalist(t, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax), betalist)
 ydata2 = MBL.magnetforbestalist(betalist, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax)
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:1:dp)

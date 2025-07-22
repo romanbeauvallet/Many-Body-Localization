@@ -1,0 +1,75 @@
+#!usr/bin/env julia
+push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
+
+using Base.Threads
+using LaTeXStrings
+println("Nombre de threads disponibles : ", nthreads())
+using JSON
+using ITensors
+using MBL
+using ProgressMeter
+using Plots
+using ITensorMPS
+using Statistics
+using Random
+using Distributions
+# =========================
+N = 20
+Ndisorder = 50
+J = 1
+δτ = 1e-3
+D0 = 10
+site_measure = div(N, 2)
+n_sweep = 3000
+cutoff = 1e-15
+dmax = 300
+# =========================
+betamax = 1
+stepbeta = 0.5
+betaeff = n_sweep * δτ
+gammescale = 0.7
+noise = 1e-8
+n_sweepDMRG = 20
+j = "z"
+γ = 0.0
+# =========================
+h = 15
+centerpic = 3
+init = 4375432
+# =========================
+betalist = collect(0:stepbeta:betamax)
+betafixe = 1
+place = findfirst(==(betafixe), betalist)
+@assert betafixe in betalist "La valeur $betafixe n'est pas dans la liste"
+
+fullseed = 1234567890
+rng = MersenneTwister(fullseed)
+seeds = rand(rng, Uniform(-h, h), N - 1)
+# =========================
+ancilla, s = MBL.AncillaMPO(N)
+disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic; σ=0.05h, A=2.0, init))
+st, dp = MBL.section_trunc(N, gammescale)
+L = collect(st:dp)
+#pour chaque champ, pour chaque beta : mesurer l'énergie de chaque site, moyenne et ecart type 
+
+Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
+#Meanvalue = Array{Float64}(undef, length(betalist), length(disorder))
+#Stdvalue = Array{Float64}(undef, length(betalist), length(disorder))
+
+# ========================= SIMU 
+
+for i in eachindex(disorder)
+    value, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax)
+    Magnetlist[:, :, i] = hcat(value...)
+end
+Meanvalue = mean(Energylist; dims=1)
+Stdvalue = std(Energylist; dims=1)
+@show disorder
+gr()
+p = plot()
+scatter!(p, disorder, vec(Meanvalue[:, place, :]), label="mean value at β=$betafixe", xlabel="disorder magnitude", ylabel="Sz expectation value", title="N=$N, cutoff=$cutoff, δτ=$δτ")
+scatter!(p, disorder, vec(Stdvalue[:, place, :]), label="standart deviation at β=$betafixe")
+display(p)
+
+
+

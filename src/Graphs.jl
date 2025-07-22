@@ -46,13 +46,13 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
     #@show sites
-    Energypersite = Vector(undef, length(sites))
+    Energypersite = Vector{Float64}(undef, length(sites))
     update = mps
     @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
         #@show i 
         Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
-    return sites, mean(Energypersite)
+    return sites, Energypersite
 end
 
 """
@@ -197,11 +197,11 @@ end
 
 ####################### Random disorder #######################
 """
-return the betalist and the energy list with a random uniform on each site
+return the energy list with a random uniform on each site
 """
 function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
+    Energylist = Vector{Vector{Float64}}(undef, length(realbetalist))
     update = ancilla
     gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)

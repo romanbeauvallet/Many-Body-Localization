@@ -62,7 +62,7 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
         return "δτ must be non negative"
     end
     k = floor(beta / δτ)
-    @showprogress desc="evolution in temperature" for i in 1:1:k
+    @showprogress desc = "evolution in temperature" for i in 1:1:k
         ancilla = apply(gates, ancilla; cutoff, maxdim=Dmax)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
@@ -162,4 +162,45 @@ function groundstateDMRG(psi0, H, n_sweep, dmax, cutoff, noise)
     noise!(sweeps, noise)
     energy, psi = dmrg(H, psi0, sweeps)
     return psi, energy / n
+end
+
+"""
+x -- point
+h -- upper boundary of the disorder magnitude
+y -- pic center index
+σ -- pic width
+H -- amplitude of the pic
+
+Define the disorder distribution
+"""
+function samplingdisorder(x, h, y, σ, H)
+    if x < 0 || x > h
+        return 0.0
+    end
+    return 1 + H * exp(-((x - y)^2) / (2σ^2))
+end
+
+"""
+N -- Int length of the sample
+X -- Float64 maximum disorder magnitude
+y -- Float64 pic center
+init -- seed
+
+return the disorder sample
+"""
+function rejection_sample(N::Int, X, y; σ=0.005X, A=5.0, init)
+    samples = Float64[]
+    rng = MersenneTwister(init)
+
+    # Trouver une borne supérieure sur la densité (pour normalisation du rejet)
+    max_density = 1 + A  # p(x) <= 1 + A partout
+
+    while length(samples) < N
+        x = rand(rng) * X  # tirage uniforme sur [0, X]
+        u = rand(rng) * max_density
+        if u < samplingdisorder(x, X, y, σ, A)
+            push!(samples, x)
+        end
+    end
+    return round.(samples, digits=4)
 end
