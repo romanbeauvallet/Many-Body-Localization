@@ -34,28 +34,6 @@ function energyagainstsite(mps, h, scale, op::String)
 end
 
 """
-mps -- MPS
-h -- disorder 
-scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
-
-return the MPS average energy for the model op, measured with gates 
-"""
-function energyagainstsiteMPOdisorder(mps, gates, scale)
-    N = length(mps)
-    start, stop = MBL.section_trunc(N, scale)
-    stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:1:stop)
-    #@show sites
-    Energypersite = Vector{Float64}(undef, length(sites))
-    update = mps
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        #@show i 
-        Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
-    end
-    return sites, Energypersite
-end
-
-"""
 mps_init_sweep -- initial boundary mps 
 gammesweep -- start and end of the number of TEBD sweep with the step [begin:end:step]
 gammescale -- 0<x<1 in order to compute the operator on gammescale*length(mps_init_sweep) from the center
@@ -146,13 +124,16 @@ return the MPS average energy measured with gates on gammescale*length(MPS) numb
 """
 function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::String, gammescale, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, Energylist[i] = energyagainstsite(update, h, gammescale, op)
+        _, value = energyagainstsite(update, h, gammescale, op)
+        Energylist[:, i] = value
     end
     return Energylist
 end
@@ -166,14 +147,16 @@ return the MPS average energy measured with gates on gammescale*length(MPS) numb
 """
 function energyforbetalist(betalist, mps::MPS, δτ, h, cutoff, op::String, gammescale, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
     gatesevolve = gateTrotterSuzukirow(mps, h, δτ, op)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         nsweep = floor(realbetalist[i] / 2 / δτ)
         update = tebdevolutionrow!(nsweep, update, gatesevolve, cutoff, dmax)
-        _, Energylist[i] = energyagainstsite(update, h, gammescale, op)
+        _, Energylist[:, i] = energyagainstsite(update, h, gammescale, op)
     end
     return Energylist
 end
@@ -210,6 +193,28 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
         _, Energylist[i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
     end
     return Energylist
+end
+
+"""
+mps -- MPS
+h -- disorder 
+scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
+
+return the MPS average energy for the model op, measured with gates 
+"""
+function energyagainstsiteMPOdisorder(mps, gates, scale)
+    N = length(mps)
+    start, stop = MBL.section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    #@show sites
+    Energypersite = Vector{Float64}(undef, length(sites))
+    update = mps
+    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+        #@show i 
+        Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
+    end
+    return sites, Energypersite
 end
 
 """
