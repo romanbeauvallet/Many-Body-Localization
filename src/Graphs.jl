@@ -219,6 +219,23 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     return Energylist
 end
 
+function magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    update = ancilla
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
+        _, Energylist[:, i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        _, Magnetlist[:, i] = magnetagainstsite(update, j, gammescale)
+    end
+    return Energylist, Magnetlist
+end
+
 """
 betalist -- list des beta 
 ancilla -- boudary mps
@@ -250,11 +267,12 @@ return the site list and the magnet (Sz) per site
 """
 function magnetagainstsite(mps, j::String, scale)
     N = length(mps)
+    update = mps
     start, stop = section_trunc(N, scale)
     sites = collect(start:1:stop)
     Magnetpersite = Vector{Float64}(undef, length(sites))
     @showprogress desc = "calcul magnet over sites" for p in eachindex(sites)
-        Magnetpersite[p] = measure_S(mps, p, j)
+        Magnetpersite[p] = measure_S(update, p, j)
     end
     return sites, Magnetpersite
 end

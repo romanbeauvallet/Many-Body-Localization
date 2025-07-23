@@ -165,11 +165,10 @@ function voidmeanandstd()
 
     @showprogress desc ="run over disorder" for i in eachindex(disorder)
         println("h = ", disorder[i])
-        valuem, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, j, Dmax)
+        valuee, valuem = MBL.magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, dmax)
         Magnetlist[:, :, i] = valuem
         output_data["magnet"] = Magnetlist
         printl("Sz part done")
-        valuee, _ = MBL.energyforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax)
         Energylist[:, :, i] = valuee
         output_data["energy"] = Energylist
         printl("Energy part done")
