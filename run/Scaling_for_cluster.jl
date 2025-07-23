@@ -71,8 +71,8 @@ metadata = Dict{String,Any}(
     "type d'initialisation" => init,
     "model" =>op
 )
-#println("\nmetadata:")
-#display(metadata)
+println("\nmetadata:")
+display(metadata)
 
 results = Dict{String,Any}(
     "energy sweep list" => nothing,
@@ -147,14 +147,24 @@ end
 ancilla, s = MBL.AncillaMPO(N)
 betalist = collect(0:betastep:betamax)
 Energylist = Array{Float64}(undef, length(betalist), length(taulist))
-
+results2 = Dict{String,Any}(
+    "energy" => nothing,
+    "beta list" => betalist,
+)
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
-        value = energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, "XY", gammescale, dmax)
+        value = energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, dmax)
         Energylist[:, i] = mean(value; dims=1)
+        results2["energy"] = Energylist
+        output_data = merge(metadata, results2)
+        #savefile = get_savefile(output_data)
+        open(savefile, "w") do io
+            JSON.print(io, output_data, 4)
+        end
+        println("\nResults saved in $savefile")
+        flush(stdout)
     end
 end
-
 
 println("simulation finie")
