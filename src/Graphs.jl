@@ -219,14 +219,14 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     return Energylist
 end
 
-function magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
+function magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init::Int64, dmax)
     realbetalist = pushfirst!(diff(betalist), 0)
     N = length(ancilla)
     st, dp = MBL.section_trunc(N, gammescale)
     Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
-    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
