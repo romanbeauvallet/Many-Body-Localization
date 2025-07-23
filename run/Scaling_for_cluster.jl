@@ -48,6 +48,7 @@ n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
 init = input_data["initialization"]
 taulist = input_data["liste step Trotter-Suzuki"]
+op = input_data["model choisi"]
 savefile = String(input_data["savefile"])
 
 lengthlist = collect(gammelength[1]:gammelength[3]:gammelength[2])
@@ -65,11 +66,13 @@ metadata = Dict{String,Any}(
     "cutoff" => cutoff,
     "disorder" => h,
     "proportion spin average" => gammescale,
+    "tau list" => taulist,
     "maximum bond dimension per tebd step" => nothing,
-    "type d'initialisation" => init
+    "type d'initialisation" => init,
+    "model" =>op
 )
-println("\nmetadata:")
-display(metadata)
+#println("\nmetadata:")
+#display(metadata)
 
 results = Dict{String,Any}(
     "energy sweep list" => nothing,
@@ -141,20 +144,17 @@ function voidscalinginit()
 end
 
 
-
-
 ancilla, s = MBL.AncillaMPO(N)
 betalist = collect(0:betastep:betamax)
-taulist = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
 Energylist = Array{Float64}(undef, length(betalist), length(taulist))
+
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
+        println("τ =", taulist[i])
         value = energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, "XY", gammescale, dmax)
         Energylist[:, i] = mean(value; dims=1)
     end
 end
-
-
 
 
 println("simulation finie")

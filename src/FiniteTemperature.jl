@@ -188,7 +188,7 @@ init -- seed
 
 return the disorder sample
 """
-function rejection_sample(N::Int, X, y; σ=0.005X, A=5.0, init)
+function rejection_sample(N::Int, X, y, init; σ=0.005X, A=5.0)
     samples = Float64[]
     rng = MersenneTwister(init)
 
@@ -210,7 +210,7 @@ return the gradient of a list (energylist) with respect to another list (betalis
 """
 function specificheat(energylist, betalist)
     n, m = length(energylist), length(betalist)
-    @assert n==m "Gradient not possible because two different length"
-    Grandientlist = diff(energylist)./diff(betalist)
+    @assert n == m "Gradient not possible because two different length"
+    Grandientlist = diff(energylist) ./ diff(betalist)
     return Grandientlist
 end

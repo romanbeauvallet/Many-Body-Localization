@@ -126,6 +126,7 @@ metadatadisorder = Dict{String,Any}(
     "axis spin" => j,
     "cutoff" => cutoff,
     "betamax" => betamax, 
+    "seed" => initseed,
     "step beta" => stepbeta,
     "maximum disorder magnitude" => h, 
     "seed" => initseed,
@@ -133,11 +134,11 @@ metadatadisorder = Dict{String,Any}(
     "proportion spin average" => gammescale,
     "maximum bond dimension per tebd step" => nothing,
 )
-println("\nmetadata:")
-display(metadata)
+println("\nmetadatadisorder:")
+display(metadatadisorder)
 
 ancilla, s = MBL.AncillaMPO(N)
-disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic; σ=0.03h, A=1.0, initseed))
+disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic, initseed; σ=0.03h, A=1.0))
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:dp)
 # =========================
