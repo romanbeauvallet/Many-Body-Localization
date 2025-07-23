@@ -67,6 +67,8 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "proportion spin average" => gammescale,
     "tau list" => taulist,
+    "upper boundary beta" => betamax,
+    "step beta list" => stepbeta,
     "maximum bond dimension per tebd step" => nothing,
     "type d'initialisation" => init,
     "model" =>op
@@ -154,7 +156,7 @@ results2 = Dict{String,Any}(
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
-        value = energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, dmax)
+        value = MBL.energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, Dmax)
         Energylist[:, i] = mean(value; dims=1)
         results2["energy"] = Energylist
         output_data = merge(metadata, results2)
@@ -166,5 +168,7 @@ function voidscalingtau()
         flush(stdout)
     end
 end
+
+voidscalingtau()
 
 println("simulation finie")
