@@ -24,8 +24,8 @@ n_sweep = 3000
 cutoff = 1e-15
 dmax = 300
 # =========================
-betamax = 1.5
-stepbeta = 0.5
+betamax = 5
+stepbeta = 1
 betaeff = n_sweep * δτ
 gammescale = 0.7
 noise = 1e-8
@@ -38,7 +38,7 @@ centerpic = 3.5
 init = 4375432
 # =========================
 betalist = collect(0:stepbeta:betamax)
-betafixe = 1
+betafixe = 5
 place = findfirst(==(betafixe), betalist)
 @assert betafixe in betalist "La valeur $betafixe n'est pas dans la liste"
 
@@ -52,16 +52,16 @@ st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:dp)
 #pour chaque champ, pour chaque beta : mesurer l'énergie de chaque site, moyenne et ecart type 
 
-Energylist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
+Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
 
 # ========================= SIMU 
 
 for i in eachindex(disorder)
-    value = MBL.energyforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, dmax)
-    Energylist[:, :, i] = hcat(value...)
-end
-Meanvalue = mean(Energylist; dims=1)
-Stdvalue = std(Energylist; dims=1)
+    value, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax)
+    Magnetlist[:, :, i] = value
+end 
+Meanvalue = mean(Magnetlist; dims=1)
+Stdvalue = std(Magnetlist; dims=1)
 @show disorder
 
 output_data = Dict{String,Any}(
@@ -71,19 +71,21 @@ output_data = Dict{String,Any}(
     "site list" => L
 )
 
-savefile = joinpath("../analyse_simulations_julia/DATA_Local/", "disorderbeta.json")
+#savefile = joinpath("../analyse_simulations_julia/DATA_Local/", "disorderbeta.json")
 
-open(savefile, "w") do io
-    JSON.print(io, output_data, 4)
-end
-println("\nResults saved in $savefile")
+#open(savefile, "w") do io
+    #JSON.print(io, output_data, 4)
+#end
+#println("\nResults saved in $savefile")
 
 
 gr()
+default(fontfamily="Computer Modern")
 p = plot()
-scatter!(p, disorder, vec(Meanvalue[:, place, :]), label="mean value", xlabel="disorder magnitude", ylabel="Average energy value", title="N=$N, cutoff=$cutoff, δτ=$δτ, β=$betafixe")
-scatter!(p, disorder, vec(Stdvalue[:, place, :]), label="standart deviation at β=$betafixe")
+scatter!(p, disorder, vec(Meanvalue[:, place, :]), label="mean value", xlabel="disorder magnitude", ylabel="Sz expectation value", title="N=$N, cutoff=$cutoff, δτ=$δτ, β=$betafixe")
+scatter!(p, disorder, vec(Stdvalue[:, place, :]), label="standart deviation")
 display(p)
+savefig("run/Plots/meanandstdmagnetSS.pdf")
 
 
 

@@ -204,3 +204,10 @@ function rejection_sample(N::Int, X, y; σ=0.005X, A=5.0, init)
     end
     return round.(samples, digits=4)
 end
+
+"""
+
+"""
+function specificheat(energylist)
+    
+end
