@@ -168,10 +168,10 @@ function voidmeanandstd()
         valuee, valuem = MBL.magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax, j)
         Magnetlist[:, :, i] = valuem
         output_data["magnet"] = Magnetlist
-        printl("Sz part done")
+        println("Sz part done")
         Energylist[:, :, i] = valuee
         output_data["energy"] = Energylist
-        printl("Energy part done")
+        println("Energy part done")
 
         #####data saving
         final_data = merge(metadatadisorder, output_data)
