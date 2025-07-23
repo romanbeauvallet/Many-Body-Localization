@@ -219,7 +219,7 @@ function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gamme
     return Energylist
 end
 
-function magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init::Int64, dmax)
+function magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init::Int64, dmax, j::String)
     realbetalist = pushfirst!(diff(betalist), 0)
     N = length(ancilla)
     st, dp = MBL.section_trunc(N, gammescale)
