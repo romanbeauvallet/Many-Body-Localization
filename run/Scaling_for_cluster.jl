@@ -29,18 +29,25 @@ input_data = JSON.parsefile(json_input)
 map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
 N = input_data["N"]
+Ndisorder = input_data["Ndisorder"]
 J = input_data["J"]
 D0 = input_data["D0"]
-h = input_data["disorder"]
-gammelength = input_data["length range"]
+betamax = input_data["maximum value for beta"]
+stepbeta = input_data["step value for beta list"]
+h0 = input_data["fixed disorder"]
+h = input_data["maximum disorder magnitude"]
 δτ = input_data["Trotter-Suzuki step"]
 Dmax = input_data["max bond dimension"]
 gammesweep = input_data["nsweep range"]
 gammescale = input_data["gammescale"]
+gammelength = input_data["gammelength"]
 cutoff = input_data["cutoff"]
+centerpic = input_data["phase transition point"]
+initseed = input_data["fixed seed"]
 n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
 init = input_data["initialization"]
+taulist = input_data["liste step Trotter-Suzuki"]
 savefile = String(input_data["savefile"])
 
 lengthlist = collect(gammelength[1]:gammelength[3]:gammelength[2])
@@ -132,6 +139,9 @@ function voidscalinginit()
         end
     end
 end
+
+
+
 
 ancilla, s = MBL.AncillaMPO(N)
 betalist = collect(0:betastep:betamax)
