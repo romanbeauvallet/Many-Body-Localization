@@ -73,7 +73,7 @@ Energytebd = Vector()
 Maxbonddim = Vector()
 Magnettebd = Vector()
 
-function void()
+function voidscalinginit()
     if init == "neel"
         for i in eachindex(lengthlist)
             mpsinit, _ = neelstate(lengthlist[i])
@@ -133,5 +133,18 @@ function void()
     end
 end
 
-void()
+ancilla, s = MBL.AncillaMPO(N)
+betalist = collect(0:betastep:betamax)
+taulist = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+Energylist = Array{Float64}(undef, length(betalist), length(taulist))
+function voidscalingtau()
+    @showprogress desc = "runing over τ" for i in eachindex(taulist)
+        value = energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, "XY", gammescale, dmax)
+        Energylist[:, i] = mean(value; dims=1)
+    end
+end
+
+
+
+
 println("simulation finie")
