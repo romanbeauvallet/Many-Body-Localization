@@ -125,10 +125,10 @@ metadatadisorder = Dict{String,Any}(
     "J" => J,
     "axis spin" => j,
     "cutoff" => cutoff,
-    "betamax" => betamax, 
+    "betamax" => betamax,
     "seed" => initseed,
     "step beta" => stepbeta,
-    "maximum disorder magnitude" => h, 
+    "maximum disorder magnitude" => h,
     "seed" => initseed,
     "phase transition point" => centerpic,
     "proportion spin average" => gammescale,
@@ -149,9 +149,9 @@ output_data = Dict{String,Any}(
     "energy" => nothing,
     "magnet" => nothing,
     "beta list" => betalist,
-    "champ" => disorder, 
-    "site list" => L, 
-    "mean value list" => nothing, 
+    "champ" => disorder,
+    "site list" => L,
+    "mean value list" => nothing,
     "std list" => nothing
 )
 
@@ -163,9 +163,9 @@ function voidmeanandstd()
 
     # ========================= SIMU 
 
-    @showprogress desc ="run over disorder" for i in eachindex(disorder)
+    @showprogress desc = "run over disorder" for i in eachindex(disorder)
         println("h = ", disorder[i])
-        valuee, valuem = MBL.magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax)
+        valuee, valuem = MBL.magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax, j)
         Magnetlist[:, :, i] = valuem
         output_data["magnet"] = Magnetlist
         printl("Sz part done")
@@ -181,7 +181,7 @@ function voidmeanandstd()
         end
         println("\nResults saved in $savefile")
         flush(stdout)
-    end 
+    end
     Meanvalue = mean(Magnetlist; dims=1)
     Stdvalue = std(Magnetlist; dims=1)
     output_data["mean value list"] = Meanvalue
