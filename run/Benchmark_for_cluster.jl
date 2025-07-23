@@ -30,14 +30,20 @@ input_data = JSON.parsefile(json_input)
 map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
 
 N = input_data["N"]
+Ndisorder = input_data["Ndisorder"]
 J = input_data["J"]
 D0 = input_data["D0"]
-h = input_data["disorder"]
+betamax = input_data["maximum value for beta"]
+stepbeta = input_data["step value for beta list"]
+h0 = input_data["fixed disorder"]
+h = input_data["maximum disorder magnitude"]
 δτ = input_data["Trotter-Suzuki step"]
 Dmax = input_data["max bond dimension"]
 gammesweep = input_data["nsweep range"]
 gammescale = input_data["gammescale"]
 cutoff = input_data["cutoff"]
+centerpic = input_data["phase transition point"]
+initseed = input_data["fixed seed"]
 n_sweep = input_data["fixed number of sweep"]
 j = input_data["axis"]
 init = input_data["initialization"]
@@ -62,7 +68,7 @@ metadata = Dict{String,Any}(
     "J" => J,
     "axis spin" => j,
     "cutoff" => cutoff,
-    "disorder" => h,
+    "disorder fixed" => h0,
     "proportion spin average" => gammescale,
     "sweep range" => sweep_list,
     "effective sweep list" => realsweeplist,
@@ -85,13 +91,13 @@ function void()
     update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
-        update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h, δτ, cutoff, Dmax)
+        update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h0, δτ, cutoff, Dmax)
         push!(Maxbonddim, maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
         #####measure
         println("Measure average energy")
-        _, e = energyagainstsite(update_tebd, h, gammescale)
+        _, e = energyagainstsite(update_tebd, h0, gammescale)
         push!(Energytebd, mean(e))
         results["energy sweep list"] = Energytebd
 
@@ -101,15 +107,94 @@ function void()
         results["magnetization sweep list"] = Magnettebd
 
         #####data saving
-        output_data = merge(metadata, results)
+        output_data_local = merge(metadata, results)
         #savefile = get_savefile(output_data)
         open(savefile, "w") do io
-            JSON.print(io, output_data, 4)
+            JSON.print(io, output_data_local, 4)
         end
         println("\nResults saved in $savefile")
         flush(stdout)
     end
 end
 
-void()
+metadatadisorder = Dict{String,Any}(
+    "N" => N,
+    "N disorder" => Ndisorder,
+    "Trotter-Suzuki time step" => δτ,
+    "Dmax" => Dmax,
+    "J" => J,
+    "axis spin" => j,
+    "cutoff" => cutoff,
+    "betamax" => betmax, 
+    "step beta" => stepbeta,
+    "maximum disorder magnitude" => h, 
+    "seed" => initseed,
+    "phase transition point" => centerpic,
+    "proportion spin average" => gammescale,
+    "maximum bond dimension per tebd step" => nothing,
+)
+println("\nmetadata:")
+display(metadata)
+
+ancilla, s = MBL.AncillaMPO(N)
+disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic; σ=0.03h, A=1.0, initseed))
+st, dp = MBL.section_trunc(N, gammescale)
+L = collect(st:dp)
+# =========================
+betalist = collect(0:stepbeta:betamax)
+# =========================
+
+output_data = Dict{String,Any}(
+    "energy" => nothing,
+    "magnet" => nothing,
+    "beta list" => betalist,
+    "champ" => disorder, 
+    "site list" => L, 
+    "mean value list" => nothing, 
+    "std list" => nothing
+)
+
+function voidmeanandstd()
+    #pour chaque champ, pour chaque beta : mesurer l'énergie de chaque site, moyenne et ecart type 
+
+    Energylist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
+    Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
+
+    # ========================= SIMU 
+
+    @showprogress desc ="run over disorder" for i in eachindex(disorder)
+        println("h = ", disorder[i])
+        valuem, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax)
+        Magnetlist[:, :, i] = valuem
+        output_data["magnet"] = Magnetlist
+        printl("Sz part done")
+        valuee, _ = MBL.energyforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, dmax)
+        Energylist[:, :, i] = valuee
+        output_data["energy"] = Energylist
+        printl("Energy part done")
+
+        #####data saving
+        final_data = merge(metadatadisorder, output_data)
+        #savefile = get_savefile(output_data)
+        open(savefile, "w") do io
+            JSON.print(io, final_data, 4)
+        end
+        println("\nResults saved in $savefile")
+        flush(stdout)
+    end 
+    Meanvalue = mean(Magnetlist; dims=1)
+    Stdvalue = std(Magnetlist; dims=1)
+    output_data["mean value list"] = Meanvalue
+    output_data["std value list"] = Stdvalue
+    final_data = merge(metadatadisorder, output_data)
+    #savefile = get_savefile(output_data)
+    open(savefile, "w") do io
+        JSON.print(io, final_data, 4)
+    end
+    println("\nResults saved in $savefile")
+    flush(stdout)
+end
+
+voidmeanandstd()
+
 println("simulation finie")

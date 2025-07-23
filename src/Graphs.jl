@@ -180,24 +180,6 @@ end
 
 ####################### Random disorder #######################
 """
-return the energy list with a random uniform on each site
-"""
-function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
-    realbetalist = pushfirst!(diff(betalist), 0)
-    N = length(ancilla)
-    st, dp = MBL.section_trunc(N, gammescale)
-    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    update = ancilla
-    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, Energylist[:, i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-    end
-    return Energylist
-end
-
-"""
 mps -- MPS
 h -- disorder 
 scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
@@ -217,6 +199,24 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
         Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
     return sites, Energypersite
+end
+
+"""
+return the energy list with a random uniform on each site
+"""
+function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    update = ancilla
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init::Int64, update, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
+        _, Energylist[:, i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+    end
+    return Energylist
 end
 
 """

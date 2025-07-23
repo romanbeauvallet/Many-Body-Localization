@@ -206,7 +206,7 @@ function rejection_sample(N::Int, X, y; σ=0.005X, A=5.0, init)
 end
 
 """
-
+return the gradient of a list (energylist) with respect to another list (betalist) by finite differences method
 """
 function specificheat(energylist, betalist)
     n, m = length(energylist), length(betalist)
