@@ -208,6 +208,9 @@ end
 """
 
 """
-function specificheat(energylist)
-    
+function specificheat(energylist, betalist)
+    n, m = length(energylist), length(betalist)
+    @assert n==m "Gradient not possible because two different length"
+    Grandientlist = diff(energylist)./diff(betalist)
+    return Grandientlist
 end

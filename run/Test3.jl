@@ -56,7 +56,7 @@ Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder)
 
 # ========================= SIMU 
 
-for i in eachindex(disorder)
+@showprogress desc ="run over disorder" for i in eachindex(disorder)
     value, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax)
     Magnetlist[:, :, i] = value
 end 
