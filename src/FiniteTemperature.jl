@@ -136,9 +136,7 @@ function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
         disorder = rand(rng, Uniform(-h, h), N - 1)  # utilise ce générateur local fixé
         #@show disorder
     end
-    gatesmeasure = ops(
-        [("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N - 1)], s
-    )
+    gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N - 1)], s)
     gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
     append!(gatesevolve, reverse(gatesevolve))
     return gatesmeasure, gatesevolve, disorder
@@ -213,5 +211,5 @@ function specificheat(energylist, betalist)
     n, m = length(energylist), length(betalist)
     @assert n == m "Gradient not possible because two different length"
     Grandientlist = diff(energylist) ./ diff(betalist)
-    return Grandientlist
+    return betalist[begin:end-1], Grandientlist
 end

@@ -30,12 +30,12 @@ site_measure = div(N, 2)
 n_sweep = 5000
 cutoff = 1e-15
 dmax = 300
-betamaxstep = 5
-betamax = 10
+betamaxstep = 2
+betamax = 8
 stepbeta1 = 0.1
-stepbeta2 = 0.5
+stepbeta2 = 0.2
 Beta = n_sweep * δτ
-gammescale = 0.6
+gammescale = 0.7
 noise = 1e-8
 n_sweepDMRG = 5
 beta = 40
@@ -50,16 +50,14 @@ ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
 Hamiltonian = operator(mps, h, smps, "SS")
 
-###Energy
+###Energy                                                                                  
 
-energybetaMPO = MBL.energyforbetalist(
-    betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax
-)
+energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax)
 @show size(energybetaMPO)
 energy = vec(mean(energybetaMPO; dims=1))
 @show typeof(energy)
 println("done energy")
-specificheat = MBL.specificheat(energy, betalist)
+xdata, specificheat = MBL.specificheat(energy, betalist)
 ###Graphes
 
 gr()
@@ -67,25 +65,14 @@ default(; fontfamily="Computer Modern")
 p1 = plot()
 scatter!(
     p1,
-    betalist,
-    energy;
-    markershape=:star5,
-    label="TEBD+purification",
-    xlabel="β",
-    ylabel="Average energy of one site",
-    title="N=$N, h=$h, δτ=$δτ, Model Heisenberg",
-)
-scatter!(
-    p1,
-    betalist,
+    xdata,
     specificheat;
-    markershape=:star5,
-    label="TEBD+purification+finite difference",
+    label="TEBD: ΔE/Δβ",
+    title="N=$N, cutoff=$cutoff, δτ=$δτ, h=$h",
+    xlabel="β",
+    markersize=2.5,
+    ylabel="specific heat",
 )
-hline!(
-    p1,
-    [1 / 4 - log(2)];
-    label="Analytical result for periodic boundary in thermodynamic limit",
-)
+plot!(p1, xdata, specificheat; label=false)
 display(p1)
-savefig("run/Plots/specificheatSS.pdf")
+savefig("run/Plots/specificheatSSsmooth.pdf")

@@ -370,8 +370,7 @@ return the indexes that slices a list of length N with the overlap scale
 """
 function section_trunc(N, scale)
     q = div(N, 2)
-    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1),
-    min(floor(Int, ((scale + 1) * q)), N)
+    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
     return be, st
 end
 

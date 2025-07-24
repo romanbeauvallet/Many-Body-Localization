@@ -53,8 +53,7 @@ mps, smps = neelstate(N)
 println("init done")
 #ydata, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, seed1, "z")
 result = pmap(
-    t -> MBL.magnetforbestalist(t, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax),
-    betalist,
+    t -> MBL.magnetforbestalist(t, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax), betalist
 )
 ydata2 = MBL.magnetforbestalist(betalist, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax)
 st, dp = MBL.section_trunc(N, gammescale)

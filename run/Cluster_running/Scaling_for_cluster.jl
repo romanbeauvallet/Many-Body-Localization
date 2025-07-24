@@ -55,7 +55,7 @@ lengthlist = collect(gammelength[1]:gammelength[3]:gammelength[2])
 
 # ===================== data 
 
-metadata = Dict{String,Any}(
+metadatainit = Dict{String, Any}(
     "N" => N,
     "Trotter-Suzuki time step" => δτ,
     "initial bond dimension" => D0,
@@ -73,12 +73,10 @@ metadata = Dict{String,Any}(
     "type d'initialisation" => init,
     "model" => op,
 )
-println("\nmetadata:")
-display(metadata)
+#println("\nmetadata:")
+#display(metadata)
 
-results = Dict{String,Any}(
-    "energy sweep list" => nothing, "magnetization sweep list" => nothing
-)
+results = Dict{String, Any}("energy sweep list" => nothing, "magnetization sweep list" => nothing)
 
 Energytebd = Vector()
 Maxbonddim = Vector()
@@ -144,18 +142,43 @@ function voidscalinginit()
     end
 end
 
+metadatatau = Dict{String, Any}(
+    "N" => N,
+    "Dmax" => Dmax,
+    "J" => J,
+    "axis spin" => j,
+    "cutoff" => cutoff,
+    "disorder" => h,
+    "proportion spin average" => gammescale,
+    "tau list" => taulist,
+    "upper boundary beta" => betamax,
+    "step beta list" => betastep,
+    "maximum bond dimension per tebd step" => nothing,
+    "model" => op,
+    "axis" => j,
+)
+println("\nmetadatatau:")
+display(metadatatau)
+
 ancilla, s = MBL.AncillaMPO(N)
 betalist = collect(0:betastep:betamax)
-Energylist = Array{Float64}(undef, length(betalist), length(taulist))
-results2 = Dict{String,Any}("energy" => nothing, "beta list" => betalist)
+st, dp = MBL.section_trunc(N, gammescale)
+Energylist = Array{Float64}(undef, dp - st + 1, length(betalist), length(taulist))
+Magnetlist = Array{Float64}(undef, dp - st + 1, length(betalist), length(taulist))
+results2 = Dict{String, Any}("energy" => nothing, "magnet" => nothing, "beta list" => betalist)
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
         value = MBL.energyforbetalist(
             betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, Dmax
         )
-        Energylist[:, i] = mean(value; dims=1)
+        valuem = MBL.magnetforbestalist(
+            betalist, ancilla, taulist[i], h, s, cutoff, gammescale, op, j, dmax
+        )
+        Energylist[:, :, i] = value
         results2["energy"] = Energylist
+        Magnetlist[:, :, i] = valuem
+        results2["magnet"] = Magnetlist
         output_data = merge(metadata, results2)
         #savefile = get_savefile(output_data)
         open(savefile, "w") do io
