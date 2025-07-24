@@ -81,7 +81,7 @@ Magnetlist = Vector()
 function void()
     ancilla, s = MBL.AncillaMPO(N)
     mps, smps = neelstate(N)
-    Hamiltonian = MBL.hamiltonianXY(mps, h, smps)
+    Hamiltonian = MBL.operator(mps, h, smps, "XY")
     ###Energy
 
     #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
