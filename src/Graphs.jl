@@ -241,8 +241,27 @@ function magnetandenergyforbetalistdisorder(
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, Energylist[:, i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-        _, Magnetlist[:, i] = magnetagainstsite(update, j, gammescale)
+        _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
+    end
+    return Energylist, Magnetlist
+end
+
+function magnetandenergyforbetalist(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j::String, op::String
+)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    update = ancilla
+    gates = gatesTEBDancilla(ancilla, h, δτ, s, op)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
+        _, Energylist[:, i] = MBL.energyagainstsite(update, h, gammescale, op)
+        _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
     end
     return Energylist, Magnetlist
 end

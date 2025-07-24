@@ -169,20 +169,16 @@ results2 = Dict{String, Any}("energy" => nothing, "magnet" => nothing, "beta lis
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
-        value = MBL.energyforbetalist(
-            betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, Dmax
-        )
-        valuem = MBL.magnetforbestalist(
-            betalist, ancilla, taulist[i], h, s, cutoff, gammescale, op, j, dmax
-        )
+        value, valuem = magnetandenergyforbetalist(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, op)
         Energylist[:, :, i] = value
         results2["energy"] = Energylist
         Magnetlist[:, :, i] = valuem
         results2["magnet"] = Magnetlist
-        output_data = merge(metadata, results2)
+        output_data = merge(metadatatau, results2)
         #savefile = get_savefile(output_data)
         open(savefile, "w") do io
-            JSON.print(io, output_data, 4)
+            JSON.print(io, output_data, 2)
         end
         println("\nResults saved in $savefile")
         flush(stdout)
