@@ -13,7 +13,8 @@ analyse_simulations_julia/lib/
 analyse_simulations_julia/share/
 analyse_simulations_julia/etc/
 analyse_simulations_julia/pyvenv.cfg
-
+analyse_simulations_julia/DATA_Cluster/
+analyse_simulations_julia/DATA_Local/
 # caches Python
 __pycache__/
 *.py[cod]
