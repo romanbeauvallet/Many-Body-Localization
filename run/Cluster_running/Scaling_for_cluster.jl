@@ -169,7 +169,7 @@ results2 = Dict{String, Any}("energy" => nothing, "magnet" => nothing, "beta lis
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
-        value, valuem = magnetandenergyforbetalist(
+        value, valuem = MBL.magnetandenergyforbetalist(
     betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, op)
         Energylist[:, :, i] = value
         results2["energy"] = Energylist
