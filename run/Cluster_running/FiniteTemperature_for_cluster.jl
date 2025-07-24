@@ -97,7 +97,7 @@ function void()
     println("measure magnet per site done")
     ###DMRG
     results["liste sites"] = xdata
-    psi, H = groundstateDMRG(mps, Hamiltonian, sweep_DMRG, dmax, cutoff, noise)
+    psi, H = groundstateDMRG(mps, Hamiltonian, sweep_DMRG, Dmax, cutoff, noise)
     xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
     _, magnetDMRG = magnetagainstsite(psi, "z", gammescale)
     results["energy sites dmrg"] = exactpersite
@@ -115,7 +115,7 @@ function void()
     output_data = merge(metadata, results)
     #savefile = get_savefile(output_data)
     open(savefile, "w") do io
-        JSON.print(io, output_data, 4)
+        JSON.print(io, output_data, 2)
     end
     println("\nResults saved in $savefile")
     return flush(stdout)
