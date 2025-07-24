@@ -63,7 +63,7 @@ results = Dict{String,Any}(
     "correlationN z" => nothing,
     "correlationR x" => nothing,
     "correlationR y" => nothing,
-    "correlationR z" => nothing
+    "correlationR z" => nothing,
 )
 
 updateN = tebdstepHeisenbergRow!(n_sweep, mpsneel, h, δτ, cutoff, Dmax)
@@ -76,11 +76,9 @@ results["correlationR x"] = correlationagainstsite(updateR, "x")
 results["correlationR y"] = correlationagainstsite(updateR, "y")
 results["correlationR z"] = correlationagainstsite(updateR, "z")
 
-
 output_data = merge(metadata, results)
 open(savefile, "w") do io
     JSON.print(io, output_data, 4)
 end
 println("\nResults saved in $savefile")
 flush(stdout)
-

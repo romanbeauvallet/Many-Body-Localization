@@ -71,14 +71,13 @@ metadata = Dict{String,Any}(
     "step beta list" => betastep,
     "maximum bond dimension per tebd step" => nothing,
     "type d'initialisation" => init,
-    "model" =>op
+    "model" => op,
 )
 println("\nmetadata:")
 display(metadata)
 
 results = Dict{String,Any}(
-    "energy sweep list" => nothing,
-    "magnetization sweep list" => nothing,
+    "energy sweep list" => nothing, "magnetization sweep list" => nothing
 )
 
 Energytebd = Vector()
@@ -145,18 +144,16 @@ function voidscalinginit()
     end
 end
 
-
 ancilla, s = MBL.AncillaMPO(N)
 betalist = collect(0:betastep:betamax)
 Energylist = Array{Float64}(undef, length(betalist), length(taulist))
-results2 = Dict{String,Any}(
-    "energy" => nothing,
-    "beta list" => betalist,
-)
+results2 = Dict{String,Any}("energy" => nothing, "beta list" => betalist)
 function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
-        value = MBL.energyforbetalist(betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, Dmax)
+        value = MBL.energyforbetalist(
+            betalist, ancilla, taulist[i], h, s, cutoff, op, gammescale, Dmax
+        )
         Energylist[:, i] = mean(value; dims=1)
         results2["energy"] = Energylist
         output_data = merge(metadata, results2)

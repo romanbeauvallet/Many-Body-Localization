@@ -36,7 +36,10 @@ gammesweep = (1000, 3000, 500) #(start, stop, step)
 
 ################# Run ###############
 sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
-realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
+realsweeplist = [
+    gammesweep[3] for
+    k in 1:(floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3])) + 1)
+]
 realsweeplist[1] = gammesweep[1]
 mps_random_debut, _ = random_initialized_MPS(N, D0)
 
@@ -52,14 +55,13 @@ metadata = Dict{String,Any}(
     "cutoff" => cutoff,
     "sweep range" => sweep_list,
     "effective sweep list" => realsweeplist,
-    "maximum bond dimension per tebd step" => nothing
+    "maximum bond dimension per tebd step" => nothing,
 )
 println("\nmetadata:")
 display(metadata)
 
 results = Dict{String,Any}(
-    "energy sweep list" => nothing,
-    "magnetization sweep list" => nothing,
+    "energy sweep list" => nothing, "magnetization sweep list" => nothing
 )
 
 Energytebd = Vector()
@@ -70,8 +72,10 @@ function void()
     global update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
-        global update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h, δτ, cutoff, Dmax)
-        push!(Maxbonddim,maxbonddim(update_tebd))
+        global update_tebd = tebdstepHeisenbergRow!(
+            realsweeplist[i], update_tebd, h, δτ, cutoff, Dmax
+        )
+        push!(Maxbonddim, maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
         #####measure

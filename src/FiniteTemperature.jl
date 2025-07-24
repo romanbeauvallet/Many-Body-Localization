@@ -36,11 +36,11 @@ return the vector of gates (ITensor type)
 function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)
     if op == "XY"
-        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
     elseif op == "SS"
-        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
     end
@@ -92,10 +92,9 @@ function exactenergyXY(β, h, γ=0.0)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end
     integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2 * pi)
-    val, _ = quadgk(integrand, -pi, pi, rtol=1e-9)
+    val, _ = quadgk(integrand, -pi, pi; rtol=1e-9)
     return -val / 2
 end
-
 
 """
 spectre -- vap de l'Hamiltonien obtained by exact diagonalization
@@ -132,12 +131,14 @@ function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
     if h < 0
         return "erreur, magnitude disorder has to be > 0"
     elseif h == 0
-        disorder = [0 for i in 1:N-1]
+        disorder = [0 for i in 1:(N - 1)]
     elseif h > 0
         disorder = rand(rng, Uniform(-h, h), N - 1)  # utilise ce générateur local fixé
         #@show disorder
     end
-    gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N-1)], s)
+    gatesmeasure = ops(
+        [("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N - 1)], s
+    )
     gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
     append!(gatesevolve, reverse(gatesevolve))
     return gatesmeasure, gatesevolve, disorder

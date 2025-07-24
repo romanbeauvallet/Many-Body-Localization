@@ -51,7 +51,10 @@ savefile = String(input_data["savefile"])
 
 ################# Run ###############
 sweep_list = collect(gammesweep[1]:gammesweep[3]:gammesweep[2])
-realsweeplist = [gammesweep[3] for k in 1:floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3]))+1]
+realsweeplist = [
+    gammesweep[3] for
+    k in 1:(floor(Int, ((gammesweep[2] - gammesweep[1]) / gammesweep[3])) + 1)
+]
 realsweeplist[1] = gammesweep[1]
 if init == "random"
     mps_random_debut, _ = random_initialized_MPS(N, D0)
@@ -73,14 +76,13 @@ metadata = Dict{String,Any}(
     "sweep range" => sweep_list,
     "effective sweep list" => realsweeplist,
     "maximum bond dimension per tebd step" => nothing,
-    "type d'initialisation" => init
+    "type d'initialisation" => init,
 )
 #println("\nmetadata:")
 #display(metadata)
 
 results = Dict{String,Any}(
-    "energy sweep list" => nothing,
-    "magnetization sweep list" => nothing,
+    "energy sweep list" => nothing, "magnetization sweep list" => nothing
 )
 
 Energytebd = Vector()
@@ -91,7 +93,9 @@ function void()
     update_tebd = deepcopy(mps_random_debut)
     for i in eachindex(realsweeplist)
         println("Time evolution with tebd")
-        update_tebd = tebdstepHeisenbergRow!(realsweeplist[i], update_tebd, h0, δτ, cutoff, Dmax)
+        update_tebd = tebdstepHeisenbergRow!(
+            realsweeplist[i], update_tebd, h0, δτ, cutoff, Dmax
+        )
         push!(Maxbonddim, maxbonddim(update_tebd))
         metadata["maximum bond dimension per tebd step"] = Maxbonddim
 
@@ -152,7 +156,7 @@ output_data = Dict{String,Any}(
     "champ" => disorder,
     "site list" => L,
     "mean value list" => nothing,
-    "std list" => nothing
+    "std list" => nothing,
 )
 
 function voidmeanandstd()
@@ -165,7 +169,9 @@ function voidmeanandstd()
 
     @showprogress desc = "run over disorder" for i in eachindex(disorder)
         println("h = ", disorder[i])
-        valuee, valuem = MBL.magnetandenergyforbetalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax, j)
+        valuee, valuem = MBL.magnetandenergyforbetalistdisorder(
+            betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, initseed, Dmax, j
+        )
         Magnetlist[:, :, i] = valuem
         output_data["magnet"] = Magnetlist
         println("Sz part done")
@@ -192,7 +198,7 @@ function voidmeanandstd()
         JSON.print(io, final_data, 4)
     end
     println("\nResults saved in $savefile")
-    flush(stdout)
+    return flush(stdout)
 end
 
 voidmeanandstd()

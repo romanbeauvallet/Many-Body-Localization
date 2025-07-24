@@ -17,7 +17,7 @@ return an randmoly initialized MPS with the sites indexes in input
 """
 function random_initialized_MPS(N, D)
     s = ITensors.siteinds("S=1/2", N)
-    psi = random_mps(s, linkdims=D)
+    psi = random_mps(s; linkdims=D)
     return psi, s
 end
 
@@ -27,7 +27,7 @@ N -- number of sites
 return a Neel state of the form |↑↓↑↓...> with N sites
 """
 function neelstate(N)
-    s = siteinds("S=1/2", N, conserve_qns=true)
+    s = siteinds("S=1/2", N; conserve_qns=true)
     mps = MPS(s, n -> isodd(n) ? "Up" : "Dn")
     return mps, s
 end
@@ -71,11 +71,11 @@ function gateTrotterSuzukirow(mps, h, δτ, op::String)
     N = length(mps)
     s = siteinds(mps)
     if op == "SS"
-        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
     elseif op == "XY"
-        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h,)) for n in 1:1:(N-1)], s)
+        gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
     end
@@ -104,7 +104,7 @@ function operator(mps, h::Float64, s, op::String)
     N = length(mps)
     ampo = AutoMPO()
     if op == "SS"
-        for j in 1:N-1
+        for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
             add!(ampo, 1, "Sz", j, "Sz", j + 1)
@@ -114,7 +114,7 @@ function operator(mps, h::Float64, s, op::String)
         H = MPO(ampo, s)
         return H
     elseif op == "XY"
-        for j in 1:N-1
+        for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
             add!(ampo, h, "Sz", j)
@@ -137,7 +137,7 @@ function operator(mps, h::Vector, s, op::String)
     N = length(mps)
     ampo = AutoMPO()
     if op == "SS"
-        for j in 1:N-1
+        for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
             add!(ampo, 1, "Sz", j, "Sz", j + 1)
@@ -147,7 +147,7 @@ function operator(mps, h::Vector, s, op::String)
         H = MPO(ampo, s)
         return H
     elseif op == "XY"
-        for j in 1:N-1
+        for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
             add!(ampo, h[j], "Sz", j)
@@ -235,7 +235,7 @@ function energysite(mps::MPS, sitemeasure, h, operator::String)
             1 / 2 * op("S-", sn) * op("S+", snn) +
             h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
     end
-    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    inter = copy[sitemeasure] * copy[sitemeasure + 1]
     normalize!(inter)
     e = scalar(dag(prime(inter, "Site")) * gate * inter)
     return real(e)
@@ -264,7 +264,7 @@ function energysite(mps::MPO, sitemeasure, h, operateur::String)
             op("Sz", sn) * op("Sz", snn) +
             h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
     end
-    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    inter = copy[sitemeasure] * copy[sitemeasure + 1]
     normalize!(inter)
     adjust = replaceprime(gate, 0 => 2)
     double = replaceprime(adjust * inter, 2 => 1)
@@ -281,7 +281,7 @@ return the energy of mps at the site sitemeasure
 function energysiteMPOdisorder(mps::MPO, sitemeasure, gate)
     newgate = replaceprime(gate, 0 => 2)
     copy = orthogonalize(mps, sitemeasure)
-    inter = copy[sitemeasure] * copy[sitemeasure+1]
+    inter = copy[sitemeasure] * copy[sitemeasure + 1]
     normalize!(inter)
     adjust = replaceprime(inter, 1 => 2)
     double = newgate * adjust
@@ -336,7 +336,7 @@ function correlationonlength(mps, k, j)
     Listintercorrel = Vector{Float64}(undef, max(1, N - k - 2)) #car quand k = N-2 on veut quand même une valeur de correlation
     for i in 2:1:max(N - k - 1, 2) #car quand k = N-2 on a quand meme un point pour calculer la correlation
         #@show correlationSpinoperator(mps, i, i + k, j)
-        Listintercorrel[i-1] = correlationSpinoperator(mps, i, i + k, j)
+        Listintercorrel[i - 1] = correlationSpinoperator(mps, i, i + k, j)
     end
     return mean(Listintercorrel)
 end
@@ -350,9 +350,9 @@ return the max bond dimension in the mps
 function maxbonddim(mps)
     maxdim = 0
     #@show typeof(mps)
-    for i in 1:(length(mps)-1)
+    for i in 1:(length(mps) - 1)
         #@show i
-        s = commonind(mps[i], mps[i+1])
+        s = commonind(mps[i], mps[i + 1])
         #@show s
         if s === nothing
             continue
@@ -370,7 +370,8 @@ return the indexes that slices a list of length N with the overlap scale
 """
 function section_trunc(N, scale)
     q = div(N, 2)
-    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
+    be, st = max(floor(Int, (1 + (1 - scale) * q)), 1),
+    min(floor(Int, ((scale + 1) * q)), N)
     return be, st
 end
 

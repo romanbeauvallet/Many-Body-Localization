@@ -58,7 +58,7 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "n_sweepDMRG" => sweep_DMRG,
     "proportion spin average" => gammescale,
-    "maximum bond dimension per tebd step" => nothing
+    "maximum bond dimension per tebd step" => nothing,
 )
 println("\nmetadata:")
 display(metadata)
@@ -68,10 +68,10 @@ results = Dict{String,Any}(
     "energy sites dmrg" => nothing,
     "exact energy" => nothing,
     "exact energy exact" => nothing,
-    "exact energy dmrg" => nothing, 
+    "exact energy dmrg" => nothing,
     "liste sites" => nothing,
     "magnet sites tebd" => nothing,
-    "magnet sites dmrg" => nothing
+    "magnet sites dmrg" => nothing,
 )
 
 Energylist = Vector()
@@ -106,19 +106,19 @@ function void()
     ###Exact energy
 
     exact = MBL.exactenergyXY(beta, h, γ)
-    results["exact energy exact"] = exact  
+    results["exact energy exact"] = exact
     exactDMRG = mean(exactpersite)
     results["exact energy dmrg"] = exactDMRG
     exactpersite = mean(energysiteMPO)
     results["exact energy"] = exactpersite
-     #####data saving
+    #####data saving
     output_data = merge(metadata, results)
     #savefile = get_savefile(output_data)
     open(savefile, "w") do io
         JSON.print(io, output_data, 4)
     end
     println("\nResults saved in $savefile")
-    flush(stdout)
+    return flush(stdout)
 end
 
 void()

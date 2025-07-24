@@ -52,7 +52,10 @@ mps, smps = neelstate(N)
 
 println("init done")
 #ydata, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, seed1, "z")
-result = pmap(t -> MBL.magnetforbestalist(t, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax), betalist)
+result = pmap(
+    t -> MBL.magnetforbestalist(t, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax),
+    betalist,
+)
 ydata2 = MBL.magnetforbestalist(betalist, mps, δτ, h, cutoff, gammescale, "SS", "z", dmax)
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:1:dp)
@@ -64,10 +67,13 @@ L = collect(st:1:dp)
 
 #@show update1[5] == update2[5]
 gr()
-heatmap(betalist, L, hcat(ydata2...),
-    xlabel = "β",
-    ylabel = "site list",
-    title = "N=$N, cutoff=$cutoff, δτ=$δτ, h=$h" ,
-    colorbar = true,
-    color = :viridis  # Palette de couleurs
+heatmap(
+    betalist,
+    L,
+    hcat(ydata2...);
+    xlabel="β",
+    ylabel="site list",
+    title="N=$N, cutoff=$cutoff, δτ=$δτ, h=$h",
+    colorbar=true,
+    color=:viridis,  # Palette de couleurs
 )

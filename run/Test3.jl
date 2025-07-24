@@ -56,38 +56,39 @@ Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder)
 
 # ========================= SIMU 
 
-@showprogress desc ="run over disorder" for i in eachindex(disorder)
-    value, _ = MBL.magnetforbestalistdisorder(betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax)
+@showprogress desc = "run over disorder" for i in eachindex(disorder)
+    value, _ = MBL.magnetforbestalistdisorder(
+        betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax
+    )
     Magnetlist[:, :, i] = value
-end 
+end
 Meanvalue = mean(Magnetlist; dims=1)
 Stdvalue = std(Magnetlist; dims=1)
 @show disorder
 
 output_data = Dict{String,Any}(
-    "energy" => Energylist,
-    "beta list" => betalist,
-    "champ" => disorder, 
-    "site list" => L
+    "energy" => Energylist, "beta list" => betalist, "champ" => disorder, "site list" => L
 )
 
 #savefile = joinpath("../analyse_simulations_julia/DATA_Local/", "disorderbeta.json")
 
 #open(savefile, "w") do io
-    #JSON.print(io, output_data, 4)
+#JSON.print(io, output_data, 4)
 #end
 #println("\nResults saved in $savefile")
 
-
 gr()
-default(fontfamily="Computer Modern")
+default(; fontfamily="Computer Modern")
 p = plot()
-scatter!(p, disorder, vec(Meanvalue[:, place, :]), label="mean value", xlabel="disorder magnitude", ylabel="Sz expectation value", title="N=$N, cutoff=$cutoff, δτ=$δτ, β=$betafixe")
-scatter!(p, disorder, vec(Stdvalue[:, place, :]), label="standart deviation")
+scatter!(
+    p,
+    disorder,
+    vec(Meanvalue[:, place, :]);
+    label="mean value",
+    xlabel="disorder magnitude",
+    ylabel="Sz expectation value",
+    title="N=$N, cutoff=$cutoff, δτ=$δτ, β=$betafixe",
+)
+scatter!(p, disorder, vec(Stdvalue[:, place, :]); label="standart deviation")
 display(p)
 savefig("run/Plots/meanandstdmagnetSS.pdf")
-
-
-
-
-
