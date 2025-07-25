@@ -170,7 +170,7 @@ function voidscalingtau()
     @showprogress desc = "runing over τ" for i in eachindex(taulist)
         println("τ =", taulist[i])
         value, valuem = MBL.magnetandenergyforbetalist(
-    betalist, ancilla, δτ, h, s, cutoff, gammescale, Dmax, j, op)
+    betalist, ancilla, taulist[i], h, s, cutoff, gammescale, Dmax, j, op)
         Energylist[:, :, i] = value
         results2["energy"] = Energylist
         Magnetlist[:, :, i] = valuem
