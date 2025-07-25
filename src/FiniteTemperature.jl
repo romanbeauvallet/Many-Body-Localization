@@ -125,7 +125,7 @@ end
 init -- integer to init the seed
 ancilla -- MPS
 """
-function evolutionwithrandomdisordergates(init::Int64, ancilla, s, h, δτ)
+function evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
     rng = MersenneTwister(init)
     N = length(ancilla)
     if h < 0

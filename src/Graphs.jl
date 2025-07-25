@@ -266,6 +266,27 @@ function magnetandenergyforbetalist(
     return Energylist, Magnetlist
 end
 
+function magnetandenergyforbetalistdisorder(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j::String, init
+)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Bonddim = Array{Float64}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve, disorder = evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
+        Bonddim[i] = MBL.maxbonddim(update)
+        _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
+    end
+    return Energylist, Magnetlist, disorder, Bonddim
+end
+
 """
 betalist -- list des beta 
 ancilla -- boudary mps
@@ -405,28 +426,6 @@ function magnetforbestalist(betalist, ancilla::MPS, δτ, h, cutoff, gammescale,
         _, Magnetlist[i] = magnetagainstsite(update, j, gammescale)
     end
     return Magnetlist
-end
-
-"""
-mps -- MPS
-h -- disorder 
-scale -- 0<scale<1, pourcentage of the chain you want to measure (from the middle chain)
-
-return the MPS average energy for the model op, measured with gates 
-"""
-function magnetagainstsiteMPOdisorder(mps, gates, scale)
-    N = length(mps)
-    start, stop = MBL.section_trunc(N, scale)
-    stop = stop < N - 2 ? stop : N - 2
-    sites = collect(start:1:stop)
-    #@show sites
-    Magnetpersite = Vector(undef, length(sites))
-    update = mps
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
-        #@show i 
-        Magnetpersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
-    end
-    return sites, Magnetpersite
 end
 
 # ======================================== Correlation

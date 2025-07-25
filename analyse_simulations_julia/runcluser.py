@@ -4,6 +4,13 @@ import subprocess
 from pathlib import Path
 import numpy as np
 
+# =========================================== input
+
+maxmagnitude = 6
+seed = 314159265
+Nsample = 20
+pic_center = 2
+
 # =========================================== donner les valeurs de désorder
 
 def sampling_disorder(x, h, y, sigma, H):
@@ -51,7 +58,7 @@ def rejection_sample(N, X, y, init, sigma=None, A=2.0):
 
     return np.array(samples)
 
-h = rejection_sample(20, 6, 2, 314159265, sigma=None, A=2.0)
+h = rejection_sample(Nsample, maxmagnitude, pic_center, seed, sigma=None, A=2.0)
 
 # =========================================== faire le slurm et run
 

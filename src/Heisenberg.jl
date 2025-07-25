@@ -347,8 +347,9 @@ mps -- mps you want to have the max bon dimension
 
 return the max bond dimension in the mps
 """
-function maxbonddim(mps)
+function maxbonddim(input)
     maxdim = 0
+    mps = input
     #@show typeof(mps)
     for i in 1:(length(mps) - 1)
         #@show i
