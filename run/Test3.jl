@@ -15,7 +15,7 @@ using Random
 using Distributions
 # =========================
 N = 20
-Ndisorder = 30
+Ndisorder = 10
 J = 1
 δτ = 1e-3
 D0 = 10
@@ -47,35 +47,39 @@ rng = MersenneTwister(fullseed)
 seeds = rand(rng, Uniform(-h, h), N - 1)
 # =========================
 ancilla, s = MBL.AncillaMPO(N)
-disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic; σ=0.03h, A=1.0, init))
+disorder = sort(MBL.rejection_sample(Ndisorder, h, centerpic, init; σ=0.03h, A=1.0))
 st, dp = MBL.section_trunc(N, gammescale)
 L = collect(st:dp)
 #pour chaque champ, pour chaque beta : mesurer l'énergie de chaque site, moyenne et ecart type 
 
 Magnetlist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
+Energylist = Array{Float64}(undef, length(L), length(betalist), length(disorder))
 
 # ========================= SIMU 
 
 @showprogress desc = "run over disorder" for i in eachindex(disorder)
-    value, _ = MBL.magnetforbestalistdisorder(
-        betalist, ancilla, δτ, disorder[i], s, cutoff, gammescale, init, j, dmax
-    )
-    Magnetlist[:, :, i] = value
+    value, valuem = MBL.magnetandenergyforbetalistdisorder(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, fullseed, dmax, j
+)
+    Magnetlist[:, :, i] = valuem
+    Energylist[:, :, i] = value
 end
 Meanvalue = mean(Magnetlist; dims=1)
 Stdvalue = std(Magnetlist; dims=1)
+MeanEnergyvalue = mean(Energylist; dims=1)
+StdEnergyvalue = std(Energylist; dims=1)
 @show disorder
 
 output_data = Dict{String,Any}(
-    "energy" => Energylist, "beta list" => betalist, "champ" => disorder, "site list" => L
+    "energy" => Energylist, "magnet" => Magnetlist, "beta list" => betalist, "champ" => disorder, "site list" => L
 )
+basedir = @__DIR__
+savefile = joinpath(basedir,"..", "analyse_simulations_julia", "DATA_Local", "disorderbeta.json")
 
-#savefile = joinpath("../analyse_simulations_julia/DATA_Local/", "disorderbeta.json")
-
-#open(savefile, "w") do io
-#JSON.print(io, output_data, 4)
-#end
-#println("\nResults saved in $savefile")
+open(savefile, "w") do io
+JSON.print(io, output_data, 4)
+end
+println("\nResults saved in $savefile")
 
 gr()
 default(; fontfamily="Computer Modern")
