@@ -31,20 +31,20 @@ for dir in 2025_07_24/h_*; do
     # ----- 1. Cree le fichier JSON modele -----
     cat > "${input_template}" <<EOF
 {
- 	"job_id" : "TO_BE_REPLACED_BY_SLURM",
+ 	"seed list" : [34632244, 8789, 876688, 6679092, 12234],
 	"parameter" : "${name}",
 	"step beta" : 0.1,
-        "N" : 100,
-        "J" : 1,
-        "maximum value for beta" : 10,
-        "step value for beta list" : 0.1,
-        "cutoff" : 1e-15,
-        "max bond dimension" :  300,
-        "Trotter-Suzuki step" : 1e-3,
-        "fixed disorder" : $float_value, 
-        "gammescale" : 0.8,
-        "axis" : "z",
-        "savefile" : "${output_json}"
+    "N" : 100,
+    "J" : 1,
+    "maximum value for beta" : 10,
+    "step value for beta list" : 0.1,
+    "cutoff" : 1e-15,
+    "max bond dimension" :  300,
+    "Trotter-Suzuki step" : 1e-3,
+    "fixed disorder" : $float_value, 
+    "gammescale" : 0.8,
+    "axis" : "z",
+    "savefile" : "${output_json}"
 }
 EQF
      jq empty "${input_template}" || { echo "JSON invalide dans $input_template"; exit 1; }
@@ -124,7 +124,5 @@ echo FINISHED AT $(date '+%A %d %B %Y %H:%M')
 EOF
 
     chmod +x "$slurm_file"
-
-    sbatch "$slurm_file"
 done
 

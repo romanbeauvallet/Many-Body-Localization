@@ -9,6 +9,7 @@ using Statistics
 using Dates
 using LinearAlgebra
 using Pkg
+using Random
 # ===================== log
 println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
 println("Julia $VERSION")
@@ -16,40 +17,26 @@ println("Julia $VERSION")
 @show Threads.nthreads()
 @show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
-# ===================== parameters
-if length(ARGS) < 1
-    println("Missing input file: use default")
-    throw(ErrorException)
-else
-    json_input = String(ARGS[1])
-end
-
-println("\nLoad input parameters from file $json_input")
-
-input_data = JSON.parsefile(json_input)
-map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
-
 # ===================================== parameters
 
-N = input_data["N"]
-J = input_data["J"]
-h = input_data["fixed disorder"]
-δτ = input_data["Trotter-Suzuki step"]
-dmax = input_data["max bond dimension"]
-gammescale = input_data["gammescale"]
-cutoff = input_data["cutoff"]
-j = input_data["axis"]
-betamax = input_data["maximum value for beta"]
-step = input_data["step beta"]
-savefile = input_data["savefile"]
-seedlist = input_data["seeds"]
-random_draw =  input_data["nombre de tirage"]
+N = 50
+J = 1
+h = 2.5
+δτ = 1e-3
+dmax = 400
+gammescale = 0.7
+cutoff = 1e-15
+j = "z"
+betamax = 5
+step = 0.1
+seedlist = [34632244, 8789, 876688, 6679092, 12234]
+random_draw = 5
 
 # ====================================== Dict
 
 betalist = collect(0:step:betamax)
 
-metadata = Dict{String,Any}(
+metadata = Dict{String, Any}(
     "N" => N,
     "Trotter-Suzuki time step" => δτ,
     "Given maximal bond dimension" => dmax,
@@ -59,39 +46,34 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "maximum bond dimension per tebd step" => nothing,
-    "seed" => seed,
-    "beta list values" => betalist, 
-    "nombre de tirage" => random_draw
+    "seed" => seedlist,
+    "beta list values" => betalist,
+    "random draw number" => random_draw
 )
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String,Any}(
+results = Dict{String, Any}(
     "energy [site, beta]" => nothing,
     "magnet [site, beta]" => nothing,
     "disorder list" => nothing,
-    "maximum bond dim at each beta" => nothing
+    "maximum bond dim at each beta" => nothing,
 )
 
 # ====================================== begin
 
-ancilla, s = MBL.AncillaMPO(N)
 st, dp = MBL.section_trunc(N, gammescale)
 
-###########
+ancilla, s = MBL.AncillaMPO(N)
 Energyarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
 Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
 Bonddimlist = Array{Float64}(undef, length(betalist), 5, length(seedlist))
 disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
-##########
-
-# ====================================== run
-
-@showprogress desc="run over seed" for p in eachindex(seedlist)
-    println("seed = ", seedlist[p])
+@showprogress desc = "run over seed" for p in eachindex(seedlist)
+    println("seed =", seedlist[p])
     rgn = MersenneTwister(seedlist[p])
-    @showprogress desc="run over tirage" for i in 1:random_draw
-        println("tirage numéro : ", i)
+    for i in 1:random_draw
+        println("tirage numéro : ", p)
         e, m, disorder, b = MBL.magnetandenergyforbetalistdisorder(
             betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, rgn
         )
@@ -103,17 +85,12 @@ disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
         results["magnet [site, beta]"] = Magnetarray
         results["disorder list"] = disorderarray
         results["maximum bond dim at each beta"] = Bonddimlist
-
-        # ======================================= save data
-
         output_data = merge(metadata, results)
+        savefile = joinpath("analyse_simulations_julia", "DATA_Local", "tryrandomdisorder.json")
         open(savefile, "w") do io
                 JSON.print(io, output_data, 2)
             end
-        println("\nResults saved in $savefile")
-        return flush(stdout)
     end
 end
 
 println("Simulation terminée")
-

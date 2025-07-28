@@ -236,15 +236,17 @@ function magnetandenergyforbetalistdisorder(
     st, dp = MBL.section_trunc(N, gammescale)
     Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Dimensionlist = Array{Float64}(undef, length(realbetalist))
     update = ancilla
-    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+    gatesmeasure, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
+    for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
         _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
+        Dimensionlist[i] = maxbonddim(update)
     end
-    return Energylist, Magnetlist
+    return Energylist, Magnetlist, disorder, Dimensionlist
 end
 
 function magnetandenergyforbetalist(

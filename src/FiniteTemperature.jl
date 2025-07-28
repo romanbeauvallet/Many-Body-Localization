@@ -125,8 +125,7 @@ end
 init -- integer to init the seed
 ancilla -- MPS
 """
-function evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
-    rng = MersenneTwister(init)
+function evolutionwithrandomdisordergates(rng, ancilla, s, h, δτ)
     N = length(ancilla)
     if h < 0
         return "erreur, magnitude disorder has to be > 0"
@@ -211,5 +210,5 @@ function specificheat(energylist, betalist)
     n, m = length(energylist), length(betalist)
     @assert n == m "Gradient not possible because two different length"
     Grandientlist = diff(energylist) ./ diff(betalist)
-    return betalist[begin:end-1], Grandientlist
+    return betalist[begin:(end - 1)], Grandientlist
 end
