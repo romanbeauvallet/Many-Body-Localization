@@ -86,6 +86,13 @@ Bonddimlist = Array{Float64}(undef, length(betalist), 5, length(seedlist))
 disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
 ##########
 
+output_data = merge(metadata, results)
+open(savefile, "w") do io
+    JSON.print(io, output_data, 2)
+end
+println("\nResults saved in $savefile")
+return flush(stdout)
+
 # ====================================== run
 
 @showprogress desc="run over seed" for p in eachindex(seedlist)
