@@ -70,10 +70,10 @@ Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(see
 Bonddimlist = Array{Float64}(undef, length(betalist), 5, length(seedlist))
 disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
 @showprogress desc = "run over seed" for p in eachindex(seedlist)
-    println("seed =", seedlist[p])
+    println("seed = ", seedlist[p])
     rgn = MersenneTwister(seedlist[p])
     for i in 1:random_draw
-        println("tirage numéro : ", p)
+        println("tirage numéro : ", i)
         e, m, disorder, b = MBL.magnetandenergyforbetalistdisorder(
             betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, rgn
         )
@@ -89,7 +89,7 @@ disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
         savefile = joinpath("analyse_simulations_julia", "DATA_Local", "tryrandomdisorder.json")
         open(savefile, "w") do io
                 JSON.print(io, output_data, 2)
-            end
+        end
     end
 end
 

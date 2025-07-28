@@ -22,43 +22,44 @@ for dir in 2025_07_24/h_*; do
     fi
     echo "$name  Float64 validé = $float_value"
 
-    logfile="$log_${name}.log"                  # ex: log_h_0.513.log
-    output_json="${dir}/output_${name}.json"          # ex: output_h_0.513.json
-    input_template="${dir}/input_${name}.json"        # fichier avec placeholder
-    input_real="${dir}/tmp_input_${name}.json"        # fichier reel avec job_id
-    slurm_file="${dir}/job_${name}.slurm"      # fichier .slurm genereé
+    logfile="log_${name}_beta10.log"                  # ex: log_h_0.513.log
+    output_json="output_${name}_beta10.json"          # ex: output_h_0.513.json
+    input_template="input_${name}_beta10.json"        # fichier avec placeholder
+    input_real="tmp_input_${name}_beta10.json"        # fichier reel avec job_id
+    slurm_file="job_${name}_beta10.slurm"      # fichier .slurm genereé
 
     # ----- 1. Cree le fichier JSON modele -----
-    cat > "${input_template}" <<EOF
+    cat > "${dir}/${input_template}" <<EOF
 {
- 	"seed list" : [34632244, 8789, 876688, 6679092, 12234],
+ 	"seeds" : "[123445, 76530112345, 7999434367231, 009876543, 2344566, 876546, 467845364340, 8906444327, 322145008293, 123454321]",
 	"parameter" : "${name}",
 	"step beta" : 0.1,
-    "N" : 100,
-    "J" : 1,
-    "maximum value for beta" : 10,
-    "step value for beta list" : 0.1,
-    "cutoff" : 1e-15,
-    "max bond dimension" :  300,
-    "Trotter-Suzuki step" : 1e-3,
-    "fixed disorder" : $float_value, 
-    "gammescale" : 0.8,
-    "axis" : "z",
-    "savefile" : "${output_json}"
+        "N" : 100,
+        "J" : 1,
+        "maximum value for beta" : 10,
+        "step value for beta list" : 0.1,
+        "cutoff" : 1e-15,
+        "max bond dimension" :  300,
+        "Trotter-Suzuki step" : 1e-4,
+        "fixed disorder" : $float_value, 
+        "gammescale" : 0.8,
+        "axis" : "z",
+        "savefile" : "${output_json}",
+	"nombre de tirage" : 10
 }
-EQF
-     jq empty "${input_template}" || { echo "JSON invalide dans $input_template"; exit 1; }
+EOF
+     jq empty "${dir}/${input_template}" || { echo "JSON invalide dans $input_template"; exit 1; }
 
-     abs_dir=$(realpath "$dir")
+     abs_dir=$(pwd)
 
      echo $abs_dir
 
     # ----- 2. Creer le fichier SLURM -----
-    cat > "${slurm_file}" <<EOF
+    cat > "${dir}/${slurm_file}" <<EOF
 #!/bin/bash
 #SBATCH --partition=genx
 #SBATCH --constraint=ib-icelake
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=2
 #SBATCH --mem 10G
 #SBATCH --job-name=$name
 #SBATCH --ntasks=1
@@ -68,35 +69,34 @@ EQF
 #SBATCH --time 0-72:0:0
 #SBATCH --output=$logfile
 #SBATCH --error=$logfile
-#SBATCH --chdir=$abs_dir
+#SBATCH --chdir=${abs_dir}/${dir}
 
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
-export JULIA_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=\$SLURM_CPUS_PER_TASK
+export JULIA_NUM_THREADS=\$SLURM_CPUS_PER_TASK
 export OMP_PROC_BIND=false
 
 echo STARTING AT $(date '+%A %d %B %Y %H:%M')
 echo HOST $(hostname)
-echo JOB ID $SLURM_JOB_ID
-echo PARTITION $SLURM_JOB_PARTITION
-echo QOS $SLURM_JOB_QOS
-echo MEMORY $SLURM_MEM_PER_NODE
-echo SLURM_CPUS_ON_NODE $SLURM_CPUS_ON_NODE
-echo SLURM_CPUS_PER_TASK $SLURM_CPUS_PER_TASK
-echo batch file $(squeue -h -j $SLURM_JOB_ID -o "%o")
+echo JOB ID \$SLURM_JOB_ID
+echo PARTITION \$SLURM_JOB_PARTITION
+echo QOS \$SLURM_JOB_QOS
+echo MEMORY \$SLURM_MEM_PER_NODE
+echo SLURM_CPUS_ON_NODE \$SLURM_CPUS_ON_NODE
+echo SLURM_CPUS_PER_TASK \$SLURM_CPUS_PER_TASK
+echo batch file $(squeue -h -j \$SLURM_JOB_ID -o "%o")
 echo
 
 echo "Working directory: $(pwd)"
 
 INPUT_TEMPLATE="${input_template}"
 OUTPUT_TEMPLATE="${output_json}"
-INPUT_REAL="${input_real}"
+INPUT_REAL="${input_template}"
 
 # Remplacer dynamiquement le job_id dans le fichier input
-sed "s/TO_BE_REPLACED_BY_SLURM/\$SLURM_JOB_ID/" "\$INPUT_TEMPLATE" > "\$INPUT_REAL"
 
-if ! jq empty $INPUT_REAL; then
-  echo "ERROR: $INPUT_REAL is not valid"
+if ! jq empty \$INPUT_REAL; then
+  echo "ERROR: \$INPUT_REAL is not valid"
   echo FINISHED AT $(date '+%A %d %B %Y %H:%M')
   exit 1
 fi
@@ -107,22 +107,20 @@ module list
 echo INPUT_FILE=\$INPUT_REAL
 echo OUTPUT_FILE=\$OUTPUT_JSON
 
-echo "Permissions et contenu du dossier courant :"
-ls -lh
-echo
-
 echo "Contenu du \$INPUT_REAL :"
-cat "\INPUT_REAL"
+cat "\$INPUT_REAL"
 echo
 
 # Appeler ton programme principal (modifie ici selon ton code)
-julia -O2 --project=/mnt/home/rbeauvallet/Many-Body-Localization  --startup-file=no --math-mode=fast /mnt/home/rbeauvallet/Many-Body-Localization/run/Cluster_running/Disorder_parallel_for_cluster.jl $INPUT_REAL
+julia -O2 --project=/mnt/home/rbeauvallet/Many-Body-Localization  --startup-file=no --math-mode=fast /mnt/home/rbeauvallet/Many-Body-Localization/run/Cluster_running/Disorder_parallel_for_cluster.jl \$INPUT_REAL
 echo
 
-echo batch file $(squeue -h -j $SLURM_JOB_ID -o "%o")
+echo batch file $(squeue -h -j \$SLURM_JOB_ID -o "%o")
 echo FINISHED AT $(date '+%A %d %B %Y %H:%M')
 EOF
 
-    chmod +x "$slurm_file"
+    chmod +x "${dir}/$slurm_file"
+
 done
+
 
