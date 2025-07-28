@@ -59,7 +59,7 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "maximum bond dimension per tebd step" => nothing,
-    "seed" => seed,
+    "seed" => seedlist,
     "beta list values" => betalist, 
     "nombre de tirage" => random_draw
 )
