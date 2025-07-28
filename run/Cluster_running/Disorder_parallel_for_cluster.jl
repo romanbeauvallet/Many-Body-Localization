@@ -5,6 +5,7 @@ using MBL
 using MKL
 using ProgressMeter
 using JSON
+using Random
 using Statistics
 using Dates
 using LinearAlgebra
