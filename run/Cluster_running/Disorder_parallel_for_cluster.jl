@@ -115,7 +115,7 @@ for i in 1:random_draw
     results["energy [site, beta]"] = Energyarray
     results["magnet [site, beta]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist
-    results["disorderlist"] = disorderlist
+    results["disorderlist"] = Disorderlist
     output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
