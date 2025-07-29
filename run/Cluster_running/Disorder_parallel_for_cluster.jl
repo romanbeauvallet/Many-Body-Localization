@@ -93,7 +93,7 @@ println("\nResults saved in $savefile")
 return flush(stdout)
 
 # ====================================== init
-rng = MersenneTwister(seed)
+rng = MersenneTwister(seedlist)
 ancilla, s = MBL.AncillaMPO(N)
 # ====================================== run
 for i in 1:random_draw
