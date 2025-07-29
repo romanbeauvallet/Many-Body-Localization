@@ -43,7 +43,7 @@ j = input_data["axis"]
 betamax = input_data["maximum value for beta"]
 step = input_data["step beta"]
 savefile = input_data["savefile"]
-seedlist = input_data["seeds"]
+init = input_data["seed"]
 random_draw =  input_data["nombre de tirage"]
 
 # ====================================== Dict
@@ -60,7 +60,7 @@ metadata = Dict{String,Any}(
     "gammescale" => gammescale,
     "disorder" => h,
     "number of spins measured" => gammescale,
-    "seed" => seedlist,
+    "seed" => init,
     "beta list values" => betalist, 
     "nombre de tirage" => random_draw
 )
@@ -93,7 +93,7 @@ println("\nResults saved in $savefile")
 return flush(stdout)
 
 # ====================================== init
-rng = MersenneTwister(seedlist)
+rng = MersenneTwister(init)
 ancilla, s = MBL.AncillaMPO(N)
 # ====================================== run
 for i in 1:random_draw
