@@ -1,16 +1,21 @@
 #!usr/bin/env julia
 
-################ Librairies #############
+##################################### Librairies #############
+
 using ITensors
 using MBL
 using ProgressMeter
 using Statistics
-############## Commentaires #############
-# on pourrait refactoriser encore le code en evitant de regénérer les gates à chaque fois qu'on mesure
-# comme on fait quand on ajoute le champ aléatoire mais générer les gates est o devant l'évolution et 
-# flemme de réécrire pour l'instant
 
-############### Functions ################
+##################################### Commentaires #############
+
+#=
+on pourrait refactoriser encore le code en evitant de regénérer les gates à chaque fois qu'on mesure
+comme on fait quand on ajoute le champ aléatoire mais générer les gates est o devant l'évolution et 
+flemme de réécrire pour l'instant
+=#
+
+##################################### Functions #############
 
 # ============================================= Energy
 """
@@ -26,10 +31,11 @@ function energyagainstsite(mps, h, scale, op::String)
     start, stop = section_trunc(N, scale)
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
-    Energypersite = Vector(undef, length(sites))
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+    Energypersite = Array{Float64}(undef, length(sites))
+    for i in eachindex(sites)
         Energypersite[i] = energysite(mps, sites[i], h, op)
     end
+    println("Average energy of MPS = ", mean(Energypersite))
     return sites, Energypersite
 end
 
@@ -91,36 +97,7 @@ function energyaverageagainstlength(
     return sites, averageenergy
 end
 
-##################### Tracer Finite Temperature #################
-"""
-betalist -- the list of beta you want to have data on
-ancilla -- MPS
-cutoff -- cutoff in the svd 
-dmax -- maximal bond dimension
-δτ -- Trotter Suzuki step 
-h -- disorder 
-op -- choose between Heisenberg Hamiltonian and XY model
-
-return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
-"""
-function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op, dmax)
-    realbetalist = pushfirst!(diff(betalist), 0)
-    Energylist = Vector{}(undef, length(realbetalist))
-    if op == "XY"
-        H = operator(ancilla, h, s, op)
-    elseif op == "SS"
-        H = operator(ancilla, h, s, op)
-    end
-    update = ancilla
-    gates = gatesTEBDancilla(update, h, δτ, s, op)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ, dmax)
-        Energylist[i] = MBL.energyMPO(update, H) / N
-    end
-    return Energylist
-end
-
+##################################### Tracer Finite Temperature #############
 """
 betamax -- maximal beta you want to reach
 step -- step in the beta list
@@ -135,11 +112,11 @@ function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::Strin
     Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+    for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, value = energyagainstsite(update, h, gammescale, op)
-        Energylist[:, i] = value
+        _, Energylist[:, i] = energyagainstsite(update, h, gammescale, op)
+        println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
     end
     return Energylist
 end
@@ -163,6 +140,7 @@ function energyforbetalist(betalist, mps::MPS, δτ, h, cutoff, op::String, gamm
         nsweep = floor(realbetalist[i] / 2 / δτ)
         update = tebdevolutionrow!(nsweep, update, gatesevolve, cutoff, dmax)
         _, Energylist[:, i] = energyagainstsite(update, h, gammescale, op)
+        println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
     end
     return Energylist
 end
@@ -185,7 +163,8 @@ function energyagainstdeltatime(
     return timesteplist, EnergyList
 end
 
-####################### Random disorder #######################
+##################################### Random disorder #############
+
 """
 mps -- MPS
 h -- disorder 
@@ -199,37 +178,39 @@ function energyagainstsiteMPOdisorder(mps, gates, scale)
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
     #@show sites
-    Energypersite = Vector{Float64}(undef, length(sites))
+    Energypersite = Array{Float64}(undef, length(sites))
     update = mps
-    @showprogress desc = "calcul energy over sites" for i in eachindex(sites)
+    for i in eachindex(sites)
         #@show i 
         Energypersite[i] = energysiteMPOdisorder(update, sites[i], gates[sites[i]])
     end
+    println("Average energy of this MPS = ", mean(Energypersite))
     return sites, Energypersite
 end
 
 """
 return the energy list with a random uniform on each site
 """
-function energyforbestalistdisorder(betalist, ancilla, δτ, h, s, cutoff, gammescale, init, dmax)
+function energyforbestalistdisorder(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, init::Int64, dmax
+)
     realbetalist = pushfirst!(diff(betalist), 0)
     N = length(ancilla)
     st, dp = MBL.section_trunc(N, gammescale)
     Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
-    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(
-        init::Int64, update, s, h, δτ
-    )
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+    gatesmeasure, gatesevolve, _ = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
+    for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[:, i] = energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
     end
     return Energylist
 end
 
 function magnetandenergyforbetalistdisorder(
-    betalist, ancilla, δτ, h, s, cutoff, gammescale, init::Int64, dmax, j::String
+    betalist, ancilla, δτ, h::Float64, s, cutoff, gammescale, init, dmax, j::String
 )
     realbetalist = pushfirst!(diff(betalist), 0)
     N = length(ancilla)
@@ -238,7 +219,9 @@ function magnetandenergyforbetalistdisorder(
     Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     Dimensionlist = Array{Float64}(undef, length(realbetalist))
     update = ancilla
-    gatesmeasure, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(init, update, s, h, δτ)
+    gatesmeasure, gatesevolve, disorder = MBL.evolutionwithrandomdisordergates(
+        init, update, s, h, δτ
+    )
     for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
@@ -247,6 +230,27 @@ function magnetandenergyforbetalistdisorder(
         Dimensionlist[i] = maxbonddim(update)
     end
     return Energylist, Magnetlist, disorder, Dimensionlist
+end
+
+function magnetandenergyforbetalistdisorder(
+    betalist, ancilla, δτ, h::Vector, s, cutoff, gammescale, dmax, j::String
+)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    N = length(ancilla)
+    st, dp = MBL.section_trunc(N, gammescale)
+    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Dimensionlist = Array{Float64}(undef, length(realbetalist))
+    update = ancilla
+    gatesmeasure, gatesevolve = MBL.evolutionwithrandomdisordergates(update, s, h, δτ)
+    for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDanxcilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
+        _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
+        Dimensionlist[i] = maxbonddim(update)
+    end
+    return Energylist, Magnetlist, Dimensionlist
 end
 
 function magnetandenergyforbetalist(
@@ -266,27 +270,6 @@ function magnetandenergyforbetalist(
         _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
     end
     return Energylist, Magnetlist
-end
-
-function magnetandenergyforbetalistdisorder(
-    betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j::String, init
-)
-    realbetalist = pushfirst!(diff(betalist), 0)
-    N = length(ancilla)
-    st, dp = MBL.section_trunc(N, gammescale)
-    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    Magnetlist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    Bonddim = Array{Float64}(undef, length(realbetalist))
-    update = ancilla
-    gatesmeasure, gatesevolve, disorder = evolutionwithrandomdisordergates(init, ancilla, s, h, δτ)
-    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        Bonddim[i] = MBL.maxbonddim(update)
-        _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-        _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
-    end
-    return Energylist, Magnetlist, disorder, Bonddim
 end
 
 """
@@ -324,9 +307,10 @@ function magnetagainstsite(mps, j::String, scale)
     start, stop = section_trunc(N, scale)
     sites = collect(start:1:stop)
     Magnetpersite = Vector{Float64}(undef, length(sites))
-    @showprogress desc = "calcul magnet over sites" for p in eachindex(sites)
+    for p in eachindex(sites)
         Magnetpersite[p] = measure_S(update, p, j)
     end
+    println("Average Sz = ", mean(Magnetpersite))
     return sites, Magnetpersite
 end
 
@@ -406,7 +390,7 @@ function magnetforbestalist(
     @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, Magnetlist[i] = magnetagainstsite(ancilla, j, gammescale)
+        _, Magnetlist[i] = magnetagainstsite(update, j, gammescale)
     end
     return Magnetlist
 end

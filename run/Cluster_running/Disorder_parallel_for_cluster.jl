@@ -75,14 +75,13 @@ results = Dict{String,Any}(
 
 # ====================================== begin
 
-ancilla, s = MBL.AncillaMPO(N)
 st, dp = MBL.section_trunc(N, gammescale)
 
 ###########
-Energyarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
-Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
-Bonddimlist = Array{Float64}(undef, length(betalist), 5, length(seedlist))
-disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
+Energyarray = Array{Float64}(undef, dp - st + 1, length(betalist), random_draw)
+Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), random_draw)
+Bonddimlist = Array{Float64}(undef, length(betalist), random_draw)
+Disorderlist = Array{Float64}(undef, random_draw)
 ##########
 
 output_data = merge(metadata, results)
@@ -92,34 +91,28 @@ end
 println("\nResults saved in $savefile")
 return flush(stdout)
 
+# ====================================== init
+rng = MersenneTwister(seed)
+ancilla, s = MBL.AncillaMPO(N)
 # ====================================== run
-
-@showprogress desc="run over seed" for p in eachindex(seedlist)
-    println("seed = ", seedlist[p])
-    rgn = MersenneTwister(seedlist[p])
-    @showprogress desc="run over tirage" for i in 1:random_draw
-        println("tirage numéro : ", i)
-        e, m, disorder, b = MBL.magnetandenergyforbetalistdisorder(
-            betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, rgn
-        )
-        Energyarray[:, :, i, p] = e
-        Magnetarray[:, :, i, p] = m
-        Bonddimlist[:, i, p] = b
-        disorderarray[:, i, p] = disorder
-        results["energy [site, beta]"] = Energyarray
-        results["magnet [site, beta]"] = Magnetarray
-        results["disorder list"] = disorderarray
-        results["maximum bond dim at each beta"] = Bonddimlist
-
-        # ======================================= save data
-
-        output_data = merge(metadata, results)
-        open(savefile, "w") do io
-                JSON.print(io, output_data, 2)
-            end
-        println("\nResults saved in $savefile")
-        return flush(stdout)
+for i in 1:random_draw
+    e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, rng, dmax, j
+)
+    Energyarray[:, :, i] = e
+    Magnetarray[:, :, i] = m
+    Bonddimlist[:, i] = b
+    Disorderlist[i] = d
+    results["energy [site, beta]"] = Energyarray
+    results["magnet [site, beta]"] = Magnetarray
+    results["maximum bond dim at each beta"] = Bonddimlist
+    results["disorderlist"] = disorderlist
+    output_data = merge(metadata, results)
+    open(savefile, "w") do io
+        JSON.print(io, output_data, 2)
     end
+    println("\nResults saved in $savefile")
+    return flush(stdout)
 end
 
 println("Simulation terminée")

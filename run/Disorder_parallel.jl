@@ -19,22 +19,39 @@ println("Julia $VERSION")
 Pkg.status()
 # ===================================== parameters
 
-N = 50
+#=
+json_input = joinpath(
+    "analyse_simulations_julia", "DATA_Cluster", "Disorder_parallel", "output_h_4.973_beta10.json"
+)
+input_data = JSON.parsefile(json_input)
+#map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
+
+N = input_data["N"]
+J = input_data["J"]
+h = input_data["disorder list"]
+δτ = input_data["Trotter-Suzuki time step"]
+dmax = input_data["Given maximal bond dimension"]
+gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
+cutoff = input_data["cutoff"]
+j = "z"
+seedlist = input_data["seed"]
+random_draw = input_data["nombre de tirage"]
+=#
+N = 100
 J = 1
-h = 2.5
+h = 0.0
 δτ = 1e-3
-dmax = 400
-gammescale = 0.7
+dmax = 300
+gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
 cutoff = 1e-15
 j = "z"
-betamax = 5
-step = 0.1
-seedlist = [34632244, 8789, 876688, 6679092, 12234]
+seedlist = [123578574309]
 random_draw = 5
 
 # ====================================== Dict
 
-betalist = collect(0:step:betamax)
+#betalist = input_data["beta list values"]
+betalist = collect(0:0.1:5)
 
 metadata = Dict{String, Any}(
     "N" => N,
@@ -48,7 +65,7 @@ metadata = Dict{String, Any}(
     "maximum bond dimension per tebd step" => nothing,
     "seed" => seedlist,
     "beta list values" => betalist,
-    "random draw number" => random_draw
+    "random draw number" => random_draw,
 )
 println("\nmetadata:")
 display(metadata)
@@ -56,41 +73,40 @@ display(metadata)
 results = Dict{String, Any}(
     "energy [site, beta]" => nothing,
     "magnet [site, beta]" => nothing,
-    "disorder list" => nothing,
     "maximum bond dim at each beta" => nothing,
 )
 
-# ====================================== begin
-
+# ====================================== init
+savefile = joinpath("analyse_simulations_julia", "DATA_Local", "verifcodeh0.json")
 st, dp = MBL.section_trunc(N, gammescale)
 
+Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Bonddimlist = fill(1.0, length(betalist), random_draw)
+disorderlist = fill(1.0, N-1, random_draw)
+rng = MersenneTwister(seed)
 ancilla, s = MBL.AncillaMPO(N)
-Energyarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
-Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), 5, length(seedlist))
-Bonddimlist = Array{Float64}(undef, length(betalist), 5, length(seedlist))
-disorderarray = Array{Float64}(undef, N - 1, 5, length(seedlist))
-@showprogress desc = "run over seed" for p in eachindex(seedlist)
-    println("seed = ", seedlist[p])
-    rgn = MersenneTwister(seedlist[p])
-    for i in 1:random_draw
-        println("tirage numéro : ", i)
-        e, m, disorder, b = MBL.magnetandenergyforbetalistdisorder(
-            betalist, ancilla, δτ, h, s, cutoff, gammescale, dmax, j, rgn
-        )
-        Energyarray[:, :, i, p] = e
-        Magnetarray[:, :, i, p] = m
-        Bonddimlist[:, i, p] = b
-        disorderarray[:, i, p] = disorder
-        results["energy [site, beta]"] = Energyarray
-        results["magnet [site, beta]"] = Magnetarray
-        results["disorder list"] = disorderarray
-        results["maximum bond dim at each beta"] = Bonddimlist
-        output_data = merge(metadata, results)
-        savefile = joinpath("analyse_simulations_julia", "DATA_Local", "tryrandomdisorder.json")
-        open(savefile, "w") do io
-                JSON.print(io, output_data, 2)
-        end
-    end
-end
+# ===================================== run
 
-println("Simulation terminée")
+for i in 1:random_draw
+    println("\n# " * "="^90)
+    println("random draw number = ", i)
+    flush(stdout)
+    e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
+    betalist, ancilla, δτ, h, s, cutoff, gammescale, rng, dmax, j
+)
+    Energyarray[:, :, i] = e
+    Magnetarray[:, :, i] = m
+    Bonddimlist[:, i] = b
+    disorderlist[:, i] = d
+    results["energy [site, beta]"] = Energyarray
+    results["magnet [site, beta]"] = Magnetarray
+    results["maximum bond dim at each beta"] = Bonddimlist
+    results["disorderlist"] = disorderlist
+    output_data = merge(metadata, results)
+    open(savefile, "w") do io
+        JSON.print(io, output_data, 2)
+    end
+    println("\nResults saved in $savefile")
+    flush(stdout)
+end

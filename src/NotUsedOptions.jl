@@ -134,3 +134,32 @@ function Ancilla(N) #à corriger car sinteinds de Vector{ITensor ne marche pas}
 
     return mps_tensors
 end
+
+"""
+betalist -- the list of beta you want to have data on
+ancilla -- MPS
+cutoff -- cutoff in the svd 
+dmax -- maximal bond dimension
+δτ -- Trotter Suzuki step 
+h -- disorder 
+op -- choose between Heisenberg Hamiltonian and XY model
+
+return the average energy of the MPS at temperature β ∈ [0:step:betamax] for the operator op, computed with the op as an MPO
+"""
+function energyforbetalistMPO(betalist, ancilla, δτ, h, s, cutoff, op, dmax)
+    realbetalist = pushfirst!(diff(betalist), 0)
+    Energylist = Vector{}(undef, length(realbetalist))
+    if op == "XY"
+        H = operator(ancilla, h, s, op)
+    elseif op == "SS"
+        H = operator(ancilla, h, s, op)
+    end
+    update = ancilla
+    gates = gatesTEBDancilla(update, h, δτ, s, op)
+    @showprogress desc = "compute energy for β" for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = MBL.TEBDancilla!(update, gates, realbetalist[i], cutoff, δτ, dmax)
+        Energylist[i] = MBL.energyMPO(update, H) / N
+    end
+    return Energylist
+end

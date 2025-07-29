@@ -1,6 +1,7 @@
 #!usr/bin/env julia
 
-################## Librairies ####################
+##################################### Librairies #############
+
 using ITensors
 using ITensorMPS
 using MBL
@@ -12,7 +13,8 @@ using Printf
 using QuadGK
 using Random
 using Distributions
-################## Functions #####################
+
+##################################### Functions #############
 """
 N -- number of sites
 
@@ -122,10 +124,12 @@ function ITensors.op(::OpName"exp-τSSdisorder", ::SiteType"S=1/2", s1::Index, s
 end
 
 """
-init -- integer to init the seed
+rng -- kernel to generate the random numbers 
 ancilla -- MPS
+s -- index sites
+h -- disorder magnitude
 """
-function evolutionwithrandomdisordergates(rng, ancilla, s, h, δτ)
+function evolutionwithrandomdisordergates(rng, ancilla, s, h::Float64, δτ)
     N = length(ancilla)
     if h < 0
         return "erreur, magnitude disorder has to be > 0"
@@ -133,12 +137,24 @@ function evolutionwithrandomdisordergates(rng, ancilla, s, h, δτ)
         disorder = [0 for i in 1:(N - 1)]
     elseif h > 0
         disorder = rand(rng, Uniform(-h, h), N - 1)  # utilise ce générateur local fixé
-        #@show disorder
     end
     gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=disorder[n],)) for n in 1:1:(N - 1)], s)
     gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
     append!(gatesevolve, reverse(gatesevolve))
     return gatesmeasure, gatesevolve, disorder
+end
+
+"""
+ancilla -- MPS
+s -- index sites
+h -- Vector of disorders (for each site)
+"""
+function evolutionwithrandomdisordergates(ancilla, s, h::Vector, δτ)
+    N = length(ancilla)
+    gatesmeasure = ops([("exp-τSSdisorder", (n, n + 1), (h=h[n],)) for n in 1:1:(N - 1)], s)
+    gatesevolve = exp.(-δτ / 2 .* gatesmeasure)
+    append!(gatesevolve, reverse(gatesevolve))
+    return gatesmeasure, gatesevolve
 end
 
 # ======================== DMRG ========================
