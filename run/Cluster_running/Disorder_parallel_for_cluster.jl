@@ -43,7 +43,7 @@ j = input_data["axis"]
 betamax = input_data["maximum value for beta"]
 step = input_data["step beta"]
 savefile = input_data["savefile"]
-init = input_data["seed"]
+init = input_data["seeds"]
 random_draw =  input_data["nombre de tirage"]
 
 # ====================================== Dict
