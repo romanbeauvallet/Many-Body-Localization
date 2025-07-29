@@ -199,14 +199,18 @@ function magnetandenergyforbetalistdisorder(
         init, update, s, h, δτ
     )
     for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
+        println("\n# " * "="^30)
+        beta = betalist[i]
+        @info "β[$i]" beta
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[:, i] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
-        println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
+        println("Average energy at β=$beta : ", mean(Energylist; dims=1)[i])
+        #println("\n# " * "="^30)
         _, Magnetlist[:, i] = MBL.magnetagainstsite(update, j, gammescale)
-        println("Average Sz at β=$betalist[i] = ", mean(Magnetlist; dims=1))
+        println("Average Sz at β=$beta : ", mean(Magnetlist; dims=1)[i])
+        #println("\n# " * "="^30)
         Dimensionlist[i] = maxbonddim(update)
-        println("Maximum bond dimension at β=$betalist[i] = ", Dimensionlist[i])
+        println("Maximum bond dimension at β=$beta : ", Dimensionlist[i])
     end
     return Energylist, Magnetlist, Disorder, Dimensionlist
 end

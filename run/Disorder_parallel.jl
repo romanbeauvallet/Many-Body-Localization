@@ -37,21 +37,22 @@ j = "z"
 seedlist = input_data["seed"]
 random_draw = input_data["nombre de tirage"]
 =#
+
 N = 100
 J = 1
-h = 0.0
+h = 0.309
 δτ = 1e-3
 dmax = 300
 gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
 cutoff = 1e-15
 j = "z"
 seedlist = [123578574309]
-random_draw = 5
+random_draw = 3
 
 # ====================================== Dict
 
 #betalist = input_data["beta list values"]
-betalist = collect(0:0.1:5)
+betalist = collect(0:0.1:3)
 
 metadata = Dict{String, Any}(
     "N" => N,
@@ -77,13 +78,13 @@ results = Dict{String, Any}(
 )
 
 # ====================================== init
-savefile = joinpath("analyse_simulations_julia", "DATA_Local", "verifcodeh0.json")
+savefile = joinpath("analyse_simulations_julia", "DATA_Local", "verifcodeh0309.json")
 st, dp = MBL.section_trunc(N, gammescale)
 
 Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
 Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
 Bonddimlist = fill(1.0, length(betalist), random_draw)
-disorderlist = fill(1.0, N-1, random_draw)
+Disorderlist = fill(1.0, N-1, random_draw)
 rng = MersenneTwister(seed)
 ancilla, s = MBL.AncillaMPO(N)
 # ===================================== run
@@ -98,7 +99,7 @@ for i in 1:random_draw
     Energyarray[:, :, i] = e
     Magnetarray[:, :, i] = m
     Bonddimlist[:, i] = b
-    disorderlist[:, i] = d
+    Disorderlist[:, i] = d
     results["energy [site, beta]"] = Energyarray
     results["magnet [site, beta]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist

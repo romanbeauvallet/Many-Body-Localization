@@ -2,7 +2,7 @@
 set -x
 set -euo pipefail
 # Parcourt tous les dossiers h_*
-for dir in 2025_07_24/h_*; do
+for dir in 2025_07_28/h_*; do
     [ -d "$dir" ] || continue  # skip non-dossiers
     name=$(basename "$dir")
     raw="${name#h_}"
@@ -31,21 +31,20 @@ for dir in 2025_07_24/h_*; do
     # ----- 1. Cree le fichier JSON modele -----
     cat > "${dir}/${input_template}" <<EOF
 {
- 	"seeds" : "[123445, 76530112345, 7999434367231, 009876543, 2344566, 876546, 467845364340, 8906444327, 322145008293, 123454321]",
+ 	"seeds" : [123456789],
 	"parameter" : "${name}",
 	"step beta" : 0.1,
         "N" : 100,
         "J" : 1,
         "maximum value for beta" : 10,
-        "step value for beta list" : 0.1,
         "cutoff" : 1e-15,
         "max bond dimension" :  300,
-        "Trotter-Suzuki step" : 1e-4,
+        "Trotter-Suzuki step" : 1e-3,
         "fixed disorder" : $float_value, 
         "gammescale" : 0.8,
         "axis" : "z",
         "savefile" : "${output_json}",
-	"nombre de tirage" : 10
+	"nombre de tirage" : 20
 }
 EOF
      jq empty "${dir}/${input_template}" || { echo "JSON invalide dans $input_template"; exit 1; }
@@ -122,5 +121,3 @@ EOF
     chmod +x "${dir}/$slurm_file"
 
 done
-
-

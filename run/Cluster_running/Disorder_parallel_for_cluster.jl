@@ -57,6 +57,7 @@ metadata = Dict{String,Any}(
     "J" => J,
     "axis spin" => j,
     "cutoff" => cutoff,
+    "gammescale" => gammescale,
     "disorder" => h,
     "number of spins measured" => gammescale,
     "seed" => seedlist,
@@ -78,10 +79,10 @@ results = Dict{String,Any}(
 st, dp = MBL.section_trunc(N, gammescale)
 
 ###########
-Energyarray = Array{Float64}(undef, dp - st + 1, length(betalist), random_draw)
-Magnetarray = Array{Float64}(undef, dp - st + 1, length(betalist), random_draw)
-Bonddimlist = Array{Float64}(undef, length(betalist), random_draw)
-Disorderlist = Array{Float64}(undef, random_draw)
+Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Bonddimlist = fill(1.0, length(betalist), random_draw)
+Disorderlist = fill(1.0, N-1, random_draw)
 ##########
 
 output_data = merge(metadata, results)
@@ -96,13 +97,16 @@ rng = MersenneTwister(seed)
 ancilla, s = MBL.AncillaMPO(N)
 # ====================================== run
 for i in 1:random_draw
+    println("\n# " * "="^90)
+    println("random draw number = ", i)
+    flush(stdout)
     e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
     betalist, ancilla, δτ, h, s, cutoff, gammescale, rng, dmax, j
 )
     Energyarray[:, :, i] = e
     Magnetarray[:, :, i] = m
     Bonddimlist[:, i] = b
-    Disorderlist[i] = d
+    disorderlist[:, i] = d
     results["energy [site, beta]"] = Energyarray
     results["magnet [site, beta]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist
@@ -112,7 +116,7 @@ for i in 1:random_draw
         JSON.print(io, output_data, 2)
     end
     println("\nResults saved in $savefile")
-    return flush(stdout)
+    flush(stdout)
 end
 
 println("Simulation terminée")
