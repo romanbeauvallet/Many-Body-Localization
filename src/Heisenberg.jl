@@ -8,7 +8,7 @@ using ProgressMeter
 using Statistics
 ################## Functions #####################
 
-# ==================================================== Init
+# ============================================= Initialization
 """
 s -- sites index
 D -- bond dimension 
@@ -32,7 +32,7 @@ function neelstate(N)
     return mps, s
 end
 
-# ==================================================== TEBD
+# ============================================= TEBD
 """
 N -- number of sites 
 J -- coupling constant
@@ -91,7 +91,8 @@ function tebdevolutionrow!(nsweep, mps, gates, cutoff, Dmax)
     end
     return mps
 end
-# ==================================================== Operators
+
+# ============================================= Hamiltonians
 """
 mps -- mps on which you compute the energy
 h -- disorder
@@ -165,7 +166,7 @@ function exactgroundenergy(J=1)
     return J * (1 / 4 - log(2))
 end
 
-# ============================================ Measure 
+# ============================================= Measure
 """
 psi -- MPS converged on which you make the measurement 
 n -- site measure
@@ -272,13 +273,33 @@ function energysite(mps::MPO, sitemeasure, h, operateur::String)
 end
 
 """
+mps -- MPS or MPO
+h -- disorder
+scale -- percentage of the chain on which you measure
+op -- choose between Heisenberg Hamiltonian and XY model
+
+return the site list and the energy per site 
+"""
+function energyagainstsite(mps, h, scale, op::String)
+    N = length(mps)
+    start, stop = section_trunc(N, scale)
+    stop = stop < N - 2 ? stop : N - 2
+    sites = collect(start:1:stop)
+    Energypersite = Array{Float64}(undef, length(sites))
+    for i in eachindex(sites)
+        Energypersite[i] = energysite(mps, sites[i], h, op)
+    end
+    return sites, Energypersite
+end
+
+"""
 mps -- MPO
 sitemeasure -- index in the mps of the site you want to compute the energy
 gate -- gates with random disorder
 
 return the energy of mps at the site sitemeasure 
 """
-function energysiteMPOdisorder(mps::MPO, sitemeasure, gate)
+function energysitedisorder(mps::MPO, sitemeasure, gate)
     newgate = replaceprime(gate, 0 => 2)
     copy = orthogonalize(mps, sitemeasure)
     inter = copy[sitemeasure] * copy[sitemeasure + 1]
@@ -341,7 +362,7 @@ function correlationonlength(mps, k, j)
     return mean(Listintercorrel)
 end
 
-# =========================================== Else
+# ============================================= Else
 """
 mps -- mps you want to have the max bon dimension 
 
@@ -350,11 +371,8 @@ return the max bond dimension in the mps
 function maxbonddim(input)
     maxdim = 0
     mps = input
-    #@show typeof(mps)
     for i in 1:(length(mps) - 1)
-        #@show i
         s = commonind(mps[i], mps[i + 1])
-        #@show s
         if s === nothing
             continue
         end
