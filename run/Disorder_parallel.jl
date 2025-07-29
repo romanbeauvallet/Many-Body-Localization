@@ -38,21 +38,21 @@ seedlist = input_data["seed"]
 random_draw = input_data["nombre de tirage"]
 =#
 
-N = 100
+N = 20
 J = 1
-h = 0.309
+h = 0.0
 δτ = 1e-3
 dmax = 300
 gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
 cutoff = 1e-15
 j = "z"
-seedlist = [123578574309]
-random_draw = 3
+init = 123578574309
+random_draw = 5
 
 # ====================================== Dict
 
 #betalist = input_data["beta list values"]
-betalist = collect(0:0.1:3)
+betalist = collect(0:0.1:5)
 
 metadata = Dict{String, Any}(
     "N" => N,
@@ -64,9 +64,9 @@ metadata = Dict{String, Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "maximum bond dimension per tebd step" => nothing,
-    "seed" => seedlist,
+    "seed" => init,
     "beta list values" => betalist,
-    "random draw number" => random_draw,
+    "random draw number" => random_draw
 )
 println("\nmetadata:")
 display(metadata)
@@ -74,18 +74,24 @@ display(metadata)
 results = Dict{String, Any}(
     "energy [site, beta]" => nothing,
     "magnet [site, beta]" => nothing,
-    "maximum bond dim at each beta" => nothing,
+    "maximum bond dim at each beta" => nothing
 )
 
 # ====================================== init
-savefile = joinpath("analyse_simulations_julia", "DATA_Local", "verifcodeh0309.json")
+savefile = joinpath("analyse_simulations_julia", "DATA_Local", "verifcodeh0.json")
 st, dp = MBL.section_trunc(N, gammescale)
 
 Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
 Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
 Bonddimlist = fill(1.0, length(betalist), random_draw)
 Disorderlist = fill(1.0, N-1, random_draw)
-rng = MersenneTwister(seed)
+
+results["energy [site, beta]"] = Energyarray
+results["magnet [site, beta]"] = Magnetarray
+results["maximum bond dim at each beta"] = Bonddimlist
+results["disorderlist"] = Disorderlist
+
+rng = MersenneTwister(init)
 ancilla, s = MBL.AncillaMPO(N)
 # ===================================== run
 
@@ -103,7 +109,7 @@ for i in 1:random_draw
     results["energy [site, beta]"] = Energyarray
     results["magnet [site, beta]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist
-    results["disorderlist"] = disorderlist
+    results["disorderlist"] = Disorderlist
     output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
