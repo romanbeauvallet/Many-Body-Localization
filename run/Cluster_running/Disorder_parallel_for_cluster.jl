@@ -90,18 +90,15 @@ results["magnet [site, beta]"] = Magnetarray
 results["maximum bond dim at each beta"] = Bonddimlist
 results["disorderlist"] = Disorderlist
 
-output_data = merge(metadata, results)
-open(savefile, "w") do io
-    JSON.print(io, output_data, 2)
-end
-println("\nResults saved in $savefile")
-return flush(stdout)
-
 # ====================================== init
 rng = MersenneTwister(init)
 ancilla, s = MBL.AncillaMPO(N)
 # ====================================== run
 for i in 1:random_draw
+    output_data = merge(metadata, results)
+    open(savefile, "w") do io
+        JSON.print(io, output_data, 2)
+    end
     println("\n# " * "="^90)
     println("random draw number = ", i)
     e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
