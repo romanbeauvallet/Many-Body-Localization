@@ -211,6 +211,7 @@ function magnetandenergyforbetalistdisorder(
         #println("\n# " * "="^30)
         Dimensionlist[i] = maxbonddim(update)
         println("Maximum bond dimension at β=$beta : ", Dimensionlist[i])
+        flush(stdout)
     end
     return Energylist, Magnetlist, Disorder, Dimensionlist
 end

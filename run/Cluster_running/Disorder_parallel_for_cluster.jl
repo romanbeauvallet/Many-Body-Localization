@@ -88,7 +88,7 @@ Disorderlist = fill(1.0, N-1, random_draw)
 results["energy [site, beta]"] = Energyarray
 results["magnet [site, beta]"] = Magnetarray
 results["maximum bond dim at each beta"] = Bonddimlist
-results["disorderlist"] = Disorderlist
+results["disorder list"] = Disorderlist
 
 # ====================================== init
 rng = MersenneTwister(init)
@@ -112,7 +112,7 @@ for i in 1:random_draw
     results["energy [site, beta]"] = Energyarray
     results["magnet [site, beta]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist
-    results["disorderlist"] = Disorderlist
+    results["disorder list"] = Disorderlist
     output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
