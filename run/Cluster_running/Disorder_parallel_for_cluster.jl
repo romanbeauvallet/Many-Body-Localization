@@ -101,6 +101,7 @@ for i in 1:random_draw
     end
     println("\n# " * "="^90)
     println("random draw number = ", i)
+    flush(sdout)
     e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
     betalist, ancilla, δτ, h, s, cutoff, gammescale, rng, dmax, j
 )
