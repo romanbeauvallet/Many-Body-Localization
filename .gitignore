@@ -15,9 +15,7 @@ analyse_simulations_julia/etc/
 analyse_simulations_julia/pyvenv.cfg
 analyse_simulations_julia/DATA_Cluster/
 analyse_simulations_julia/DATA_Local/
-analyse_simulations_julia/analysis.ipynb
-analyse_simulations_julia/analysis_local.ipynb
-analyse_simulations_julia/analysis_disorder.ipynb
+analyse_simulations_julia/Jupyter/
 
 # caches Python
 __pycache__/
