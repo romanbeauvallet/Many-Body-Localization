@@ -104,7 +104,6 @@ ancilla, s = MBL.AncillaMPO(N)
 for i in 1:random_draw
     println("\n# " * "="^90)
     println("random draw number = ", i)
-    flush(stdout)
     e, m, d, b = MBL.magnetandenergyforbetalistdisorder(
     betalist, ancilla, δτ, h, s, cutoff, gammescale, rng, dmax, j
 )
