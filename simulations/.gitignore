@@ -1,0 +1,35 @@
+# fichiers système
+.DS_Store
+
+# configuration locale de VS Code
+.vscode/
+
+# ne PAS ignorer Manifest.toml — tu dois le versionner pour Julia
+# Manifest.toml   ← à SUPPRIMER de ce gitignore
+
+# environnement Python local créé avec `uv venv .`
+analyse_simulations_julia/bin/
+analyse_simulations_julia/lib/
+analyse_simulations_julia/share/
+analyse_simulations_julia/etc/
+analyse_simulations_julia/pyvenv.cfg
+analyse_simulations_julia/DATA_Cluster/
+analyse_simulations_julia/DATA_Local/
+analyse_simulations_julia/Jupyter/
+
+# caches Python
+__pycache__/
+*.py[cod]
+CACHEDIR.TAG
+
+
+# notebooks Jupyter
+.ipynb_checkpoints/
+
+# fichiers temporaires génériques
+*.log
+*.tmp
+
+# optionnel 
+
+Manifest.toml
