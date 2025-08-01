@@ -8,10 +8,10 @@
 # Manifest.toml   ← à SUPPRIMER de ce gitignore
 
 # environnement Python local créé avec `uv venv .`
-./analyse_simulations_julia/DATA_Cluster/
-./analyse_simulations_julia/DATA_Local/
-./analyse_simulations_julia/Jupyter/
-./analyse_simulations_julia/Plots_disorder/
+analyse_simulations_julia/DATA_Cluster/
+analyse_simulations_julia/DATA_Local/
+analyse_simulations_julia/Jupyter/
+analyse_simulations_julia/Plots_disorder/
 
 
 # caches Python
@@ -29,4 +29,4 @@ CACHEDIR.TAG
 
 # optionnel 
 
-Manifest.toml
+simulations/Manifest.toml
