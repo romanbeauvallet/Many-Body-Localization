@@ -11,6 +11,7 @@ using Dates
 using LinearAlgebra
 using Pkg
 using HDF5
+using ITensorMPS
 # ===================== log
 println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
 println("Julia $VERSION")
@@ -46,7 +47,6 @@ init = 123578574309
 random_draw = 5
 betamax = 5
 step = 0.1
-init = 123578574309
 random_draw = 5
 
 # ====================================== Dict
@@ -54,10 +54,10 @@ random_draw = 5
 betalist = collect(0:step:betamax)
 realbetalist = pushfirst!(diff(betalist), 0)
 
-savefile = joinpath("analyse_simulations_julia","DATA_Local","testsavemps.json")
-savemps = joinpath("analyse_simulations_julia","DATA_Local","testsavemps.h5")
+savefile = joinpath("..", "analyse_simulations_julia", "DATA_Local", "testsavemps.json")
+savemps = joinpath("..", "analyse_simulations_julia", "DATA_Local", "testsavemps.h5")
 
-metadata = Dict{String,Any}(
+metadata = Dict{String, Any}(
     "N" => N,
     "Trotter-Suzuki time step" => δτ,
     "Given maximal bond dimension" => dmax,
@@ -68,38 +68,33 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "seed" => init,
-    "beta list values" => betalist, 
-    "nombre de tirage" => random_draw, 
-    "fichier de sauvegarde MPS" => savemps
+    "beta list values" => betalist,
+    "nombre de tirage" => random_draw,
+    "fichier de sauvegarde MPS" => savemps,
 )
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String,Any}(
-    "disorder list" => nothing,
-    "maximum bond dim at each beta" => nothing
-)
+results = Dict{String, Any}("disorder list" => nothing, "maximum bond dim at each beta" => nothing)
 
 # ====================================== begin
 
 ###########
-Bonddimlist = fill(1.0, length(betalist), random_draw)
-Disorderlist = fill(1.0, N-1, random_draw)
+Disorderlist = fill(1.0, N - 1, random_draw)
 ##########
 
-results["maximum bond dim at each beta"] = Bonddimlist
 results["disorder list"] = Disorderlist
 
 # ====================================== init
 rng = MersenneTwister(init)
 # ====================================== run
+# Open the HDF5 file ONCE in append mode before the main loop
+# This ensures all MPOs are written to the same file without overwriting.
+f_h5 = h5open(savemps, "cw")
+
 for l in 1:random_draw
     ancilla, s = MBL.AncillaMPO(N)
     update = ancilla
-    output_data = merge(metadata, results)
-    open(savefile, "w") do io
-        JSON.print(io, output_data, 2)
-    end
     println("\n# " * "="^90)
     println("random draw number = ", l)
     flush(stdout)
@@ -113,13 +108,17 @@ for l in 1:random_draw
         beta = betalist[i]
         @info "β[$i]" beta
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        f = h5open(savemps, "w")
-        write(f, "MPS beta = $(betalist[i]), draw = $l", update)
-        close(f)
-        Bonddimlist[i,l] = maxbonddim(update)
-        println("Maximum bond dimension at β=$beta : ", Bonddimlist[i,l])
+
+        # Write to the already opened HDF5 file (f_h5)
+        # The group name will be unique for each beta and draw combination
+        write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
+
+        Bonddimlist[i, l] = maxbonddim(update)
+        println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
+        results["maximum bond dim at each beta"] = Bonddimlist
         flush(stdout)
     end
+    output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
     end
@@ -127,10 +126,14 @@ for l in 1:random_draw
     flush(stdout)
 end
 
+# Close the HDF5 file AFTER the entire simulation is finished
+close(f_h5)
+
 println("Simulation terminée")
 
+# Now, you can read from the file
 f = h5open(savemps, "r")
-psi = read(f, "MPS beta = 5.5, draw = 2", MPS)
+psi = read(f, "MPO beta = 2.5, draw = 2", MPO)
 close(f)
 
 @show psi

@@ -45,7 +45,7 @@ betamax = input_data["maximum value for beta"]
 step = input_data["step beta"]
 savefile = input_data["savefile"]
 init = input_data["seeds"]
-random_draw =  input_data["nombre de tirage"]
+random_draw = input_data["nombre de tirage"]
 savemps = input_data["h5 file"]
 
 # ====================================== Dict
@@ -53,7 +53,7 @@ savemps = input_data["h5 file"]
 betalist = collect(0:step:betamax)
 realbetalist = pushfirst!(diff(betalist), 0)
 
-metadata = Dict{String,Any}(
+metadata = Dict{String, Any}(
     "N" => N,
     "Trotter-Suzuki time step" => δτ,
     "Given maximal bond dimension" => dmax,
@@ -64,23 +64,20 @@ metadata = Dict{String,Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "seed" => init,
-    "beta list values" => betalist, 
-    "nombre de tirage" => random_draw, 
-    "fichier de sauvegarde MPS" => savemps
+    "beta list values" => betalist,
+    "nombre de tirage" => random_draw,
+    "fichier de sauvegarde MPS" => savemps,
 )
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String,Any}(
-    "disorder list" => nothing,
-    "maximum bond dim at each beta" => nothing
-)
+results = Dict{String, Any}("disorder list" => nothing, "maximum bond dim at each beta" => nothing)
 
 # ====================================== begin
 
 ###########
 Bonddimlist = fill(1.0, length(betalist), random_draw)
-Disorderlist = fill(1.0, N-1, random_draw)
+Disorderlist = fill(1.0, N - 1, random_draw)
 ##########
 
 results["maximum bond dim at each beta"] = Bonddimlist
@@ -89,18 +86,16 @@ results["disorder list"] = Disorderlist
 # ====================================== init
 rng = MersenneTwister(init)
 # ====================================== run
+f_h5 = h5open(savemps, "cw")
+
 for l in 1:random_draw
     ancilla, s = MBL.AncillaMPO(N)
     update = ancilla
-    output_data = merge(metadata, results)
-    open(savefile, "w") do io
-        JSON.print(io, output_data, 2)
-    end
     println("\n# " * "="^90)
-    println("random draw number = ", i)
+    println("random draw number = ", l)
     flush(stdout)
     gatesmeasure, gatesevolve, Disorder = MBL.evolutionwithrandomdisordergates(
-        init, update, s, h, δτ
+        rng, update, s, h, δτ
     )
     Disorderlist[:, l] = Disorder
     results["disorder list"] = Disorderlist
@@ -109,18 +104,25 @@ for l in 1:random_draw
         beta = betalist[i]
         @info "β[$i]" beta
         update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-        f = h5open(savemps, "w")
-        write(f, "MPS beta = $(betalist[i]), draw = $l", update)
-        close(f)
-        Dimensionlist[i] = maxbonddim(update)
-        println("Maximum bond dimension at β=$beta : ", Dimensionlist[i])
+
+        # Write to the already opened HDF5 file (f_h5)
+        # The group name will be unique for each beta and draw combination
+        write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
+
+        Bonddimlist[i, l] = maxbonddim(update)
+        println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
+        results["maximum bond dim at each beta"] = Bonddimlist
         flush(stdout)
     end
+    output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
     end
     println("\nResults saved in $savefile")
     flush(stdout)
 end
+
+# Close the HDF5 file AFTER the entire simulation is finished
+close(f_h5)
 
 println("Simulation terminée")
