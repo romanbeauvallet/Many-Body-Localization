@@ -109,8 +109,8 @@ for i in 1:random_draw
     Magnetarray[:, :, i] = m
     Bonddimlist[:, i] = b
     Disorderlist[:, i] = d
-    results["energy [site, beta]"] = Energyarray
-    results["magnet [site, beta]"] = Magnetarray
+    results["energy [site, beta, draw]"] = Energyarray
+    results["magnet [site, beta, draw]"] = Magnetarray
     results["maximum bond dim at each beta"] = Bonddimlist
     results["disorder list"] = Disorderlist
     output_data = merge(metadata, results)

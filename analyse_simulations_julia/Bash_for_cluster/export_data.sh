@@ -2,7 +2,7 @@
 echo "=== MON FICHIER EST BIEN EXÉCUTÉ ==="
 set -x
 set -euo pipefail
-for dir in h_*; do
+for dir in 2025_08_01/h_*; do
     [ -d "$dir" ] || continue
     name=$(basename "$dir")
     raw="${name#h_}"
@@ -20,6 +20,6 @@ for dir in h_*; do
        exit 1
     fi
     echo "$name  Float64 validé = $float_value"
-    scp flatiron:/mnt/home/rbeauvallet/ceph/dataHeisenberg/ParallelDisorder/${dir}/output_h_${float_value}_beta10.json ../DATA_Cluster/Disorder_parallel/2025_07_24
+    scp flatiron:/mnt/home/rbeauvallet/ceph/dataHeisenberg/ParallelDisorder/${dir}/output_h_${float_value}_beta10.json ../DATA_Cluster/Disorder_parallel/2025_08_01
 done
 

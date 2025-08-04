@@ -71,15 +71,25 @@ metadata = Dict{String, Any}(
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String, Any}("disorder list" => nothing, "maximum bond dim at each beta" => nothing)
-
+results = Dict{String,Any}(
+    "energy [site, beta]" => nothing,
+    "magnet [site, beta]" => nothing,
+    "disorder list" => nothing,
+    "maximum bond dim at each beta" => nothing
+)
 # ====================================== begin
+    
+st, dp = MBL.section_trunc(N, gammescale)
 
 ###########
+Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
 Bonddimlist = fill(1.0, length(betalist), random_draw)
-Disorderlist = fill(1.0, N - 1, random_draw)
+Disorderlist = fill(1.0, N-1, random_draw)
 ##########
 
+results["energy [site, beta]"] = Energyarray
+results["magnet [site, beta]"] = Magnetarray
 results["maximum bond dim at each beta"] = Bonddimlist
 results["disorder list"] = Disorderlist
 
@@ -108,7 +118,13 @@ for l in 1:random_draw
         # Write to the already opened HDF5 file (f_h5)
         # The group name will be unique for each beta and draw combination
         write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
-
+        _, Energyarray[:, i, l] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        results["energy [site, beta, draw]"] = Energyarray
+        println("Average energy at β=$beta : ", mean(Energylist; dims=1)[i])
+        #println("\n# " * "="^30)
+        _, Magnetarray[:, i, l] = MBL.magnetagainstsite(update, j, gammescale)
+        results["magnet [site, beta, draw]"] = Magnetarray
+        println("Average Sz at β=$beta : ", mean(Magnetlist; dims=1)[i])
         Bonddimlist[i, l] = maxbonddim(update)
         println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
         results["maximum bond dim at each beta"] = Bonddimlist

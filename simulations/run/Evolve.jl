@@ -55,7 +55,7 @@ betalist = collect(0:step:betamax)
 realbetalist = pushfirst!(diff(betalist), 0)
 
 savefile = joinpath("..", "analyse_simulations_julia", "DATA_Local", "testsavemps.json")
-savemps = joinpath("..", "analyse_simulations_julia", "DATA_Local", "testsavemps.h5")
+savemps = joinpath("..", "analyse_simulations_julia", "DATA_Cluster", "Disorder_parallel", "test", "mps_h_3.247_beta10.h5")
 
 metadata = Dict{String, Any}(
     "N" => N,
@@ -86,56 +86,56 @@ Disorderlist = fill(1.0, N - 1, random_draw)
 results["disorder list"] = Disorderlist
 
 # ====================================== init
-rng = MersenneTwister(init)
-# ====================================== run
-# Open the HDF5 file ONCE in append mode before the main loop
-# This ensures all MPOs are written to the same file without overwriting.
-f_h5 = h5open(savemps, "cw")
+function void()
+    rng = MersenneTwister(init)
+    # ====================================== run
+    # Open the HDF5 file ONCE in append mode before the main loop
+    # This ensures all MPOs are written to the same file without overwriting.
+    f_h5 = h5open(savemps, "cw")
 
-for l in 1:random_draw
-    ancilla, s = MBL.AncillaMPO(N)
-    update = ancilla
-    println("\n# " * "="^90)
-    println("random draw number = ", l)
-    flush(stdout)
-    gatesmeasure, gatesevolve, Disorder = MBL.evolutionwithrandomdisordergates(
-        rng, update, s, h, δτ
-    )
-    Disorderlist[:, l] = Disorder
-    results["disorder list"] = Disorderlist
-    for i in eachindex(realbetalist)
-        println("\n# " * "="^30)
-        beta = betalist[i]
-        @info "β[$i]" beta
-        update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
+    for l in 1:random_draw
+        ancilla, s = MBL.AncillaMPO(N)
+        update = ancilla
+        println("\n# " * "="^90)
+        println("random draw number = ", l)
+        flush(stdout)
+        gatesmeasure, gatesevolve, Disorder = MBL.evolutionwithrandomdisordergates(
+            rng, update, s, h, δτ
+        )
+        Disorderlist[:, l] = Disorder
+        results["disorder list"] = Disorderlist
+        for i in eachindex(realbetalist)
+            println("\n# " * "="^30)
+            beta = betalist[i]
+            @info "β[$i]" beta
+            update = MBL.TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
 
-        # Write to the already opened HDF5 file (f_h5)
-        # The group name will be unique for each beta and draw combination
-        write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
+            # Write to the already opened HDF5 file (f_h5)
+            # The group name will be unique for each beta and draw combination
+            write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
 
-        Bonddimlist[i, l] = maxbonddim(update)
-        println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
-        results["maximum bond dim at each beta"] = Bonddimlist
+            Bonddimlist[i, l] = maxbonddim(update)
+            println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
+            results["maximum bond dim at each beta"] = Bonddimlist
+            flush(stdout)
+        end
+        output_data = merge(metadata, results)
+        open(savefile, "w") do io
+            JSON.print(io, output_data, 2)
+        end
+        println("\nResults saved in $savefile")
         flush(stdout)
     end
-    output_data = merge(metadata, results)
-    open(savefile, "w") do io
-        JSON.print(io, output_data, 2)
-    end
-    println("\nResults saved in $savefile")
-    flush(stdout)
+
+    # Close the HDF5 file AFTER the entire simulation is finished
+    close(f_h5)
+
+    println("Simulation terminée")
 end
-
-# Close the HDF5 file AFTER the entire simulation is finished
-close(f_h5)
-
-println("Simulation terminée")
 
 # Now, you can read from the file
 f = h5open(savemps, "r")
-psi = read(f, "MPO beta = 2.5, draw = 2", MPO)
+psi = read(f, "MPO beta = 1.4, draw = 2", MPO)
 close(f)
-
-@show psi
 
 println("Reading test worked")
