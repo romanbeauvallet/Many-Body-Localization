@@ -78,7 +78,7 @@ results = Dict{String,Any}(
     "maximum bond dim at each beta" => nothing
 )
 # ====================================== begin
-    
+
 st, dp = MBL.section_trunc(N, gammescale)
 
 ###########
@@ -120,11 +120,11 @@ for l in 1:random_draw
         write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
         _, Energyarray[:, i, l] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
         results["energy [site, beta, draw]"] = Energyarray
-        println("Average energy at β=$beta : ", mean(Energylist; dims=1)[i])
+        println("Average energy at β=$beta : ", mean(Energyarray; dims=1)[i])
         #println("\n# " * "="^30)
         _, Magnetarray[:, i, l] = MBL.magnetagainstsite(update, j, gammescale)
         results["magnet [site, beta, draw]"] = Magnetarray
-        println("Average Sz at β=$beta : ", mean(Magnetlist; dims=1)[i])
+        println("Average Sz at β=$beta : ", mean(Magnetarray; dims=1)[i])
         Bonddimlist[i, l] = maxbonddim(update)
         println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
         results["maximum bond dim at each beta"] = Bonddimlist
