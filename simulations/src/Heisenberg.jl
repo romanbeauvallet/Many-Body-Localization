@@ -74,7 +74,7 @@ function gateTrotterSuzukirow(mps, h, δτ, op::String)
         gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
-    elseif op == "XY"
+    elseif op == "XX"
         gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
@@ -114,7 +114,7 @@ function operator(mps, h::Float64, s, op::String)
         add!(ampo, h, "Sz", N)
         H = MPO(ampo, s)
         return H
-    elseif op == "XY"
+    elseif op == "XX"
         for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
@@ -147,7 +147,7 @@ function operator(mps, h::Vector, s, op::String)
         add!(ampo, h[N], "Sz", N)
         H = MPO(ampo, s)
         return H
-    elseif op == "XY"
+    elseif op == "XX"
         for j in 1:(N - 1)
             add!(ampo, 1 / 2, "S+", j, "S-", j + 1)
             add!(ampo, 1 / 2, "S-", j, "S+", j + 1)
@@ -230,7 +230,7 @@ function energysite(mps::MPS, sitemeasure, h, operator::String)
             1 / 2 * op("S-", sn) * op("S+", snn) +
             op("Sz", sn) * op("Sz", snn) +
             h * (op("Sz", sn) * op("Id", snn) + op("Id", sn) * op("Sz", snn))
-    elseif operator == "XY"
+    elseif operator == "XX"
         gate =
             1 / 2 * op("S+", sn) * op("S-", snn) +
             1 / 2 * op("S-", sn) * op("S+", snn) +
@@ -253,7 +253,7 @@ function energysite(mps::MPO, sitemeasure, h, operateur::String)
     copy = orthogonalize(mps, sitemeasure)
     sn = siteind(copy, sitemeasure)
     snn = siteind(copy, sitemeasure + 1)
-    if operateur == "XY"
+    if operateur == "XX"
         gate =
             1 / 2 * op("S+", sn) * op("S-", snn) +
             1 / 2 * op("S-", sn) * op("S+", snn) +

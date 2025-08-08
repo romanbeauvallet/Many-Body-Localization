@@ -37,7 +37,7 @@ return the vector of gates (ITensor type)
 """
 function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)
-    if op == "XY"
+    if op == "XX"
         gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
         append!(gates, reverse(gates))
         return gates
@@ -64,7 +64,7 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
         return "δτ must be non negative"
     end
     k = floor(beta / δτ)
-    @showprogress desc = "evolution in temperature" for i in 1:1:k
+    for i in 1:1:k
         ancilla = apply(gates, ancilla; cutoff, maxdim=Dmax)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
@@ -89,7 +89,7 @@ h -- disorder
 
 exact energy at temperature beta for XY model at temperature β with disorder h 
 """
-function exactenergyXY(β, h, γ=0.0)
+function exactenergyXX(β, h, γ=0.0)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end

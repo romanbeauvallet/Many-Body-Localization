@@ -93,7 +93,7 @@ function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::Strin
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
-        update = MBL.TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
+        update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[:, i] = energyagainstsite(update, h, gammescale, op)
         println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
     end

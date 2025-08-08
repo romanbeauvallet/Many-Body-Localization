@@ -1,0 +1,140 @@
+#!usr/bin/env julia
+push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
+############### Librairies #################
+using MBL
+using MKL
+using ProgressMeter
+using JSON
+using Random
+using Statistics
+using Dates
+using LinearAlgebra
+using Pkg
+using HDF5
+using PProf
+using Profile
+# ===================== log
+println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
+println("Julia $VERSION")
+@show Base.julia_cmd()
+@show Threads.nthreads()
+@show LinearAlgebra.BLAS.get_num_threads()
+Pkg.status()
+# ===================== parameters
+
+N = 100
+J = 1
+h = 0.0
+δτ = 1e-3
+dmax = 300
+gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
+cutoff = 1e-15
+j = "z"
+betamax1 = 10
+step1 = 0.1
+step2 = 1
+betamax2 = 30
+noise = 1e-8
+n_sweep = 20
+
+savefilexxh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyxxh0.txt"
+)
+savefilexxzh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzh0.txt"
+)
+
+savefileexactenergy = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyexactxxh0.txt"
+)
+
+savefilexxzdmrgh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzDMRGh0.txt"
+)
+
+savefilexxdmrgh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyexactxxDMRGh0.txt"
+)
+
+# ====================================== Dict
+
+betalist1 = collect(0:step1:betamax1)
+betalist2 = collect(betamax1:step2:betamax2)
+
+betalist = vcat(betalist1, betalist2)
+
+realbetalist = pushfirst!(diff(betalist), 0)
+
+metadata = Dict{String, Any}(
+    "N" => N,
+    "Trotter-Suzuki time step" => δτ,
+    "Given maximal bond dimension" => dmax,
+    "J" => J,
+    "axis spin" => j,
+    "cutoff" => cutoff,
+    "gammescale" => gammescale,
+    "disorder" => h,
+    "number of spins measured" => gammescale,
+    "seed" => init,
+    "beta list values" => betalist,
+    "noise" => noise, 
+    "nombre de sweep" =>n_sweep
+)
+println("\nmetadata:")
+display(metadata)
+
+# ====================================== begin
+
+st, dp = MBL.section_trunc(N, gammescale)
+ancilla, s = MBL.AncillaMPO(N)
+mps, smps = neelstate(N)
+HXX = operator(mps, h, smps, "XX")
+HXXZ = operator(mps, h, smps, "SS")
+
+
+###########
+Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
+Bonddimlist = fill(1.0, length(betalist), random_draw)
+Disorderlist = fill(1.0, N - 1, random_draw)
+##########
+
+results["energy [site, beta]"] = Energyarray
+results["magnet [site, beta]"] = Magnetarray
+results["maximum bond dim at each beta"] = Bonddimlist
+results["disorder list"] = Disorderlist
+
+energyxx = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XX", gammescale, dmax)
+open(savefilexxh0, "w") do io
+    for i in eachindex(beta_list)
+        println(io, "$(beta_list[i]) $(energyxx[i])")
+    end
+end
+psi, energyXXDMRG = MBL.groundstateDMRG(mps, HXX, n_sweep, dmax, cutoff, noise)
+open(savefilexxdmrgh0, "w") do io
+    for i in eachindex(beta_list)
+        println(io, "$(beta_list[i]) $(energyXXDMRG[i])")
+    end
+end
+psi, energyXXZDMRG = MBL.groundstateDMRG(mps, HXXZ, n_sweep, dmax, cutoff, noise)
+open(savefilexxzdmrgh0, "w") do io
+    for i in eachindex(beta_list)
+        println(io, "$(beta_list[i]) $(energyXXZDMRG[i])")
+    end
+end
+energyxxz = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax)
+open(savefilexxzh0, "w") do io
+    for i in eachindex(beta_list)
+        println(io, "$(beta_list[i]) $(energyxxz[i])")
+    end
+end
+exactenergy = [MBL.exactenergyXX(β, h; γ=0.0) for β in betalist]
+open(savefileexactenergy, "w") do io
+    for i in eachindex(beta_list)
+        println(io, "$(beta_list[i]) $(exactenergy[i])")
+    end
+end
+
+
+
+
