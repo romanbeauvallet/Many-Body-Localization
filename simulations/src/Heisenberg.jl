@@ -1,11 +1,13 @@
 #!usr/bin/env julia
 
 ################## Librairies ####################
+
 using ITensors
 using ITensorMPS
 using LinearAlgebra
 using ProgressMeter
 using Statistics
+     # tune; 1–4 often best
 ################## Functions #####################
 
 # ============================================= Initialization

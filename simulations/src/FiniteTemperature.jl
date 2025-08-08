@@ -1,4 +1,4 @@
-#!usr/bin/env julia
+#!/usr/bin/env julia
 
 ##################################### Librairies #############
 
@@ -63,12 +63,15 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     if δτ <= 0
         return "δτ must be non negative"
     end
-    k = floor(beta / δτ)
-    for i in 1:1:k
+    k = floor(Int, beta / δτ)
+    begin_time = time()
+    for _ in 1:k
         ancilla = apply(gates, ancilla; cutoff, maxdim=Dmax)
         #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
     end
+    end_time = time()
+    println("time to evolve: ", end_time - begin_time, " s")
     return ancilla
 end
 

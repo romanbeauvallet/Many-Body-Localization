@@ -1,8 +1,13 @@
-#!usr/bin/env julia
+#!/usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ############### Librairies #################
 using MBL
-using MKL
+if Sys.isapple()
+    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
+end
+import LinearAlgebra: BLAS
+@show BLAS.vendor()          # should print :accelerate
+BLAS.set_num_threads(8)      # tune; 1–4 often best
 using ProgressMeter
 using JSON
 using Random
@@ -17,7 +22,7 @@ println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
 println("Julia $VERSION")
 @show Base.julia_cmd()
 @show Threads.nthreads()
-@show LinearAlgebra.BLAS.get_num_threads()
+#@show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
 # ===================== parameters
 #=

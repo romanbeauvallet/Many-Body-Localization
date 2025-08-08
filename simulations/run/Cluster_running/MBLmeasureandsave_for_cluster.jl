@@ -2,7 +2,12 @@
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
 ############### Librairies #################
 using MBL
-using MKL
+if Sys.isapple()
+    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
+end
+import LinearAlgebra: BLAS
+@show BLAS.vendor()          # should print :accelerate
+BLAS.set_num_threads(8)      # tune; 1–4 often best
 using ProgressMeter
 using JSON
 using Random
@@ -99,37 +104,40 @@ rng = MersenneTwister(init)
 f_h5 = h5open(savemps, "cw")
 
 for l in 1:random_draw
-    ancilla, s = MBL.AncillaMPO(N)
-    update = ancilla
+    update, s = MBL.AncillaMPO(N)
     println("\n# " * "="^90)
     println("random draw number = ", l)
     flush(stdout)
     gatesmeasure, gatesevolve, Disorder = MBL.evolutionwithrandomdisordergates(
         rng, update, s, h, δτ
     )
-    Disorderlist[:, l] = Disorder
+    @views Disorderlist[:, l] .= Disorder
     results["disorder list"] = Disorderlist
     for i in eachindex(realbetalist)
         println("\n# " * "="^30)
         beta = betalist[i]
         @info "β[$i]" beta
+        start_time = time()
         update = TEBDancilla!(update, gatesevolve, realbetalist[i] / 2, cutoff, δτ, dmax)
-
+        end_time = time()
+        println("Evolution time: ", end_time - start_time, " s")
         # Write to the already opened HDF5 file (f_h5)
-        # The group name will be unique for each beta and draw combination
-        write(f_h5, "MPO beta = $(betalist[i]), draw = $l", update)
-        _, Energyarray[:, i, l] = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        write(f_h5, "β = $beta, draw = $l", update)
+        _, e = MBL.energyagainstsiteMPOdisorder(update, gatesmeasure, gammescale)
+        @views Energyarray[:, i, l] .= e
         results["energy [site, beta, draw]"] = Energyarray
         println("Average energy at β=$beta : ", mean(Energyarray; dims=1)[i])
         #println("\n# " * "="^30)
-        _, Magnetarray[:, i, l] = magnetagainstsite(update, j, gammescale)
+        _, m = magnetagainstsite(update, j, gammescale)
+        @views Magnetarray[:, i, l] .= m
         results["magnet [site, beta, draw]"] = Magnetarray
         println("Average Sz at β=$beta : ", mean(Magnetarray; dims=1)[i])
-        Bonddimlist[i, l] = maxbonddim(update)
+        @views Bonddimlist[i,l] .= maxbonddim(update)
         println("Maximum bond dimension at β=$beta : ", Bonddimlist[i, l])
         results["maximum bond dim at each beta"] = Bonddimlist
         flush(stdout)
     end
+
     output_data = merge(metadata, results)
     open(savefile, "w") do io
         JSON.print(io, output_data, 2)
@@ -139,6 +147,6 @@ for l in 1:random_draw
 end
 
 # Close the HDF5 file AFTER the entire simulation is finished
-close(f_h5)
+return close(f_h5)
 
 println("Simulation terminée")
