@@ -75,7 +75,6 @@ metadata = Dict{String, Any}(
     "gammescale" => gammescale,
     "disorder" => h,
     "number of spins measured" => gammescale,
-    "seed" => init,
     "beta list values" => betalist,
     "noise" => noise, 
     "nombre de sweep" =>n_sweep
@@ -90,19 +89,6 @@ ancilla, s = MBL.AncillaMPO(N)
 mps, smps = neelstate(N)
 HXX = operator(mps, h, smps, "XX")
 HXXZ = operator(mps, h, smps, "SS")
-
-
-###########
-Energyarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
-Magnetarray = fill(1.0, dp - st + 1, length(betalist), random_draw)
-Bonddimlist = fill(1.0, length(betalist), random_draw)
-Disorderlist = fill(1.0, N - 1, random_draw)
-##########
-
-results["energy [site, beta]"] = Energyarray
-results["magnet [site, beta]"] = Magnetarray
-results["maximum bond dim at each beta"] = Bonddimlist
-results["disorder list"] = Disorderlist
 
 energyxx = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XX", gammescale, dmax)
 open(savefilexxh0, "w") do io

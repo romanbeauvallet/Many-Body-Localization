@@ -88,14 +88,14 @@ function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::Strin
     realbetalist = pushfirst!(diff(betalist), 0) #realbetalist and betalist same length
     N = length(ancilla)
     st, dp = MBL.section_trunc(N, gammescale)
-    Energylist = Array{Float64}(undef, dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    Energylist = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
         _, Energylist[:, i] = energyagainstsite(update, h, gammescale, op)
-        println("Average energy at β=$betalist[i] = ", mean(Energylist; dims=1))
+        println("Average energy at β=$(betalist[i]): ", mean(Energylist; dims=1)[i])
     end
     return Energylist
 end

@@ -34,7 +34,7 @@ j = "z"
 init = 123578574309
 betamax = 1
 step = 0.1
-random_draw = 5
+random_draw = 10
 savefile = joinpath("..", "analyse_simulations_julia", "DATA_Local", "debugsimu", "outputh0_3.json")
 savemps = joinpath("..", "analyse_simulations_julia", "DATA_Local", "debugsimu", "mpsh4_5.h5")
 
@@ -110,7 +110,7 @@ function void()
             end_time = time()
             println("Evolution time: ", end_time-start_time, " s")
             # Write to the already opened HDF5 file (f_h5)
-            write(f_h5, "β = $(betalist[i]), draw = $l", update)
+            write(f_h5, "β = $beta, draw = $l", update)
             _, Energyarray[:, i, l] = MBL.energyagainstsiteMPOdisorder(
                 update, gatesmeasure, gammescale
             )
