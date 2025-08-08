@@ -92,32 +92,32 @@ HXXZ = operator(mps, h, smps, "SS")
 
 energyxx = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XX", gammescale, dmax)
 open(savefilexxh0, "w") do io
-    for i in eachindex(beta_list)
-        println(io, "$(beta_list[i]) $(energyxx[i])")
+    for i in eachindex(betalist)
+        println(io, "$(betalist[i]) $(energyxx[i])")
     end
 end
 psi, energyXXDMRG = MBL.groundstateDMRG(mps, HXX, n_sweep, dmax, cutoff, noise)
 open(savefilexxdmrgh0, "w") do io
     for i in eachindex(beta_list)
-        println(io, "$(beta_list[i]) $(energyXXDMRG[i])")
+        println(io, "$(betalist[i]) $(energyXXDMRG[i])")
     end
 end
 psi, energyXXZDMRG = MBL.groundstateDMRG(mps, HXXZ, n_sweep, dmax, cutoff, noise)
 open(savefilexxzdmrgh0, "w") do io
     for i in eachindex(beta_list)
-        println(io, "$(beta_list[i]) $(energyXXZDMRG[i])")
+        println(io, "$(betalist[i]) $(energyXXZDMRG[i])")
     end
 end
 energyxxz = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax)
 open(savefilexxzh0, "w") do io
     for i in eachindex(beta_list)
-        println(io, "$(beta_list[i]) $(energyxxz[i])")
+        println(io, "$(betalist[i]) $(energyxxz[i])")
     end
 end
 exactenergy = [MBL.exactenergyXX(β, h; γ=0.0) for β in betalist]
 open(savefileexactenergy, "w") do io
     for i in eachindex(beta_list)
-        println(io, "$(beta_list[i]) $(exactenergy[i])")
+        println(io, "$(betalist[i]) $(exactenergy[i])")
     end
 end
 
