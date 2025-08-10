@@ -1,8 +1,7 @@
 #!usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-using MKL
 using ProgressMeter
 using JSON
 using Statistics
@@ -81,7 +80,7 @@ Magnetlist = Vector()
 function void()
     ancilla, s = MBL.AncillaMPO(N)
     mps, smps = neelstate(N)
-    Hamiltonian = MBL.operator(mps, h, smps, "XY")
+    Hamiltonian = MBL.operator(mps, h, smps, "XX")
     ###Energy
 
     #energybetaMPO = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XY", gammescale)
@@ -89,7 +88,7 @@ function void()
     println("gate generated")
     update = TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     println("update tebd done")
-    xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XY")
+    xdata, energysiteMPO = energyagainstsite(update, h, gammescale, "XX")
     results["energy sites tebd"] = energysiteMPO
     println("measure energy per site done")
     _, magnetsiteMPO = magnetagainstsite(update, "z", gammescale)
@@ -98,14 +97,14 @@ function void()
     ###DMRG
     results["liste sites"] = xdata
     psi, H = groundstateDMRG(mps, Hamiltonian, sweep_DMRG, Dmax, cutoff, noise)
-    xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XY")
+    xdata2, exactpersite = energyagainstsite(psi, h, gammescale, "XX")
     _, magnetDMRG = magnetagainstsite(psi, "z", gammescale)
     results["energy sites dmrg"] = exactpersite
     results["magnet sites tebd"] = magnetDMRG
     println("DMRG done")
     ###Exact energy
 
-    exact = MBL.exactenergyXY(beta, h, γ)
+    exact = MBL.exactenergyXX(beta, h; γ)
     results["exact energy exact"] = exact
     exactDMRG = mean(exactpersite)
     results["exact energy dmrg"] = exactDMRG

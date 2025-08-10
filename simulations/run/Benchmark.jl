@@ -1,8 +1,7 @@
-#!usr/bin/env julia
+#!/usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-using MKL
 using ProgressMeter
 using JSON
 using Statistics

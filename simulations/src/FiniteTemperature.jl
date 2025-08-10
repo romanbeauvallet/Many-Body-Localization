@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-##################################### Librairies #############
+##################################### Libraries #############
 
 using ITensors
 using ITensorMPS
@@ -92,7 +92,7 @@ h -- disorder
 
 exact energy at temperature beta for XY model at temperature β with disorder h 
 """
-function exactenergyXX(β, h, γ=0.0)
+function exactenergyXX(β, h; γ=0.0)
     function ε(k, h, γ)
         return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
     end

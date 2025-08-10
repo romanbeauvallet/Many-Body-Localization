@@ -1,13 +1,9 @@
 #!/usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-if Sys.isapple()
-    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
-end
 import LinearAlgebra: BLAS
-@show BLAS.vendor()          # should print :accelerate
-BLAS.set_num_threads(8)      # tune; 1–4 often best
+@show BLAS.vendor()
 using ProgressMeter
 using JSON
 using Statistics
@@ -23,25 +19,6 @@ println("Julia $VERSION")
 @show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
 # ===================================== parameters
-
-#=
-json_input = joinpath(
-    "analyse_simulations_julia", "DATA_Cluster", "Disorder_parallel", "output_h_4.973_beta10.json"
-)
-input_data = JSON.parsefile(json_input)
-#map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
-
-N = input_data["N"]
-J = input_data["J"]
-h = input_data["disorder list"]
-δτ = input_data["Trotter-Suzuki time step"]
-dmax = input_data["Given maximal bond dimension"]
-gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
-cutoff = input_data["cutoff"]
-j = "z"
-seedlist = input_data["seed"]
-random_draw = input_data["nombre de tirage"]
-=#
 
 N = 20
 J = 1

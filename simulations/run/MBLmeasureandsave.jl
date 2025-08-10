@@ -1,13 +1,9 @@
 #!/usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-if Sys.isapple()
-    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
-end
 import LinearAlgebra: BLAS
-@show BLAS.vendor()          # should print :accelerate
-BLAS.set_num_threads(8)      # tune; 1–4 often best
+@show BLAS.vendor()
 using ProgressMeter
 using JSON
 using Random
@@ -146,10 +142,11 @@ end
 Profile.clear()
 Profile.init() # returns the current settings
 Profile.init(; n=10^7, delay=0.01)
-@profview void();  # VScode only
-Profile.print()
-
-@profview_allocs profile_test(10) sample_rate = 0.1
-# PProf.jl not super convenient
+try
+    @profview void()  # VSCode only
+    Profile.print()
+catch
+    @warn "ProfileView not available in this session"
+end
 
 println("Simulation terminée")

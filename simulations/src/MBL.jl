@@ -1,14 +1,35 @@
-#!usr/bin/env julia
+#!/usr/bin/env julia
 module MBL
 
 include("Heisenberg.jl")
 include("Graphs.jl")
 include("FiniteTemperature.jl")
-export gateTrotterSuzukiandhamiltonian,
-    measure_H, random_initialized_MPS, operator, measure_Sz, energysite, neelstate
-export tebdevolutionrow!, gateTrotterSuzukirow, gatesTEBDancilla, TEBDancilla!
-export magnetagainstsite, energyagainstdeltatime, energyagainstsite
-export maxbonddim
-export correlationSpinoperator, correlationonlength, correlationagainstsite
-export groundstateDMRG
+export random_initialized_MPS,
+       neelstate,
+       gateTrotterSuzukirow,
+       tebdevolutionrow!,
+       operator,
+       measure_S,
+       measure_H,
+       energysite,
+       energysitedisorder,
+       energyagainstsite,
+       energyagainstsiteMPOdisorder,
+       gatesTEBDancilla,
+       TEBDancilla!,
+       energyMPO,
+       evolutionwithrandomdisordergates,
+       magnetagainstsite,
+       energyagainstdeltatime,
+       correlationSpinoperator,
+       correlationonlength,
+       correlationagainstsite,
+       maxbonddim,
+       section_trunc,
+       randomoperator,
+       groundstateDMRG,
+       exactenergyXX,
+       energyexact,
+       specificheat,
+       AncillaMPO
 end # module MBL

@@ -1,13 +1,9 @@
 #!/usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-if Sys.isapple()
-    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
-end
 import LinearAlgebra: BLAS
-@show BLAS.vendor()          # should print :accelerate
-BLAS.set_num_threads(8)      # tune; 1–4 often best
+@show BLAS.vendor()
 using ProgressMeter
 using JSON
 using Random
@@ -16,12 +12,6 @@ using Dates
 using LinearAlgebra
 using Pkg
 # Ensure we use the simulation project environment
-#Pkg.activate(joinpath(@__DIR__, "..")) not worth it because julia is started in the project with julia --project=.
-try
-    using HDF5
-catch
-    @warn "HDF5 not available; continuing without it"
-end
 try
     using PProf
     using Profile
@@ -32,29 +22,36 @@ end
 println(Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS"))
 println("Julia $VERSION")
 @show Base.julia_cmd()
-#@show BLAS.get_config()
-#@show BLAS.get_num_threads()
 @show Threads.nthreads()
-#@show LinearAlgebra.BLAS.get_num_threads()
 Pkg.status()
 # ===================== parameters
+if length(ARGS) < 1
+    println("Missing input file: use default")
+    throw(ErrorException)
+else
+    json_input = String(ARGS[1])
+end
 
-N = 100
-J = 1
-h = 0.0
-δτ = 1e-3
-dmax = 300
-gammescale = 0.8 #missing in the output data (found in the input data on the cluster)
-cutoff = 1e-15
-j = "z"
-betamax1 = 10
-step1 = 0.1
-step2 = 1
-betamax2 = 15
-noise = 1e-8
-n_sweep = 20
+println("\nLoad input parameters from file $json_input")
 
-base_plots = joinpath(@__DIR__, "..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
+input_data = JSON.parsefile(json_input)
+map(k -> println(k, ": ", input_data[k]), sort(collect(keys(input_data))))
+
+N = input_data["N"]
+J = input_data["J"]
+γ = input_data["gamma"]
+h = input_data["disorder"]
+δτ = input_data["Trotter-Suzuki step"]
+dmax = input_data["max bond dimension"]
+gammescale = input_data["gammescale"]
+cutoff = input_data["cutoff"]
+j = input_data["axis"]
+noise = input_data["noise"]
+n_sweep = input_data["number sweep dmrg"]
+betamax1 = input_data["beta fixe"]
+betamax2 = input_data["beta fixe"]
+
+base_plots = joinpath("..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
 dir_xx = joinpath(base_plots, "XX")
 dir_xxz = joinpath(base_plots, "XXZ")
 mkpath(dir_xx)
@@ -82,12 +79,11 @@ metadata = Dict{String, Any}(
     "J" => J,
     "axis spin" => j,
     "cutoff" => cutoff,
-    "gammescale" => gammescale,
     "disorder" => h,
     "number of spins measured" => gammescale,
     "beta list values" => betalist,
-    "noise" => noise, 
-    "nombre de sweep" =>n_sweep
+    "noise DMRG" => noise, 
+    "nombre de sweep DMRG" =>n_sweep
 )
 println("\nmetadata:")
 display(metadata)

@@ -1,13 +1,9 @@
 #!usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-if Sys.isapple()
-    ENV["JULIA_BLAS_VENDOR"] = "accelerate"
-end
 import LinearAlgebra: BLAS
-@show BLAS.vendor()          # should print :accelerate
-BLAS.set_num_threads(8)      # tune; 1–4 often best
+@show BLAS.vendor()
 using ProgressMeter
 using JSON
 using Random

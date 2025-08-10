@@ -1,8 +1,7 @@
 #!usr/bin/env julia
 push!(LOAD_PATH, joinpath(@__DIR__, "..", "src"))
-############### Librairies #################
+############### Libraries #################
 using MBL
-using MKL
 using ProgressMeter
 using JSON
 using Statistics
@@ -66,8 +65,10 @@ results = Dict{String,Any}(
     "correlationR z" => nothing,
 )
 
-updateN = tebdstepHeisenbergRow!(n_sweep, mpsneel, h, δτ, cutoff, Dmax)
-updateR = tebdstepHeisenbergRow!(n_sweep, mpsdebutrandom, h, δτ, cutoff, Dmax)
+gatesN = gateTrotterSuzukirow(mpsneel, h, δτ, "SS")
+gatesR = gateTrotterSuzukirow(mpsdebutrandom, h, δτ, "SS")
+updateN = tebdevolutionrow!(n_sweep, mpsneel, gatesN, cutoff, Dmax)
+updateR = tebdevolutionrow!(n_sweep, mpsdebutrandom, gatesR, cutoff, Dmax)
 
 results["correlationN x"] = correlationagainstsite(updateN, "x")
 results["correlationN y"] = correlationagainstsite(updateN, "y")
