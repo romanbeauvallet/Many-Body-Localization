@@ -25,6 +25,7 @@ println("Julia $VERSION")
 @show Threads.nthreads()
 Pkg.status()
 # ===================== parameters
+#=
 if length(ARGS) < 1
     println("Missing input file: use default")
     throw(ErrorException)
@@ -50,6 +51,24 @@ noise = input_data["noise"]
 n_sweep = input_data["number sweep dmrg"]
 betamax1 = input_data["beta fixe"]
 betamax2 = input_data["beta fixe"]
+=#
+
+N = 100
+J = 1
+γ = 0.0
+h = 0.0
+δτ = 1e-3
+dmax = 300
+gammescale = 0.8
+cutoff = 1e-15
+j = "z"
+noise = 1e-8
+n_sweep = 10
+betamax1 = 10
+betamax2 = 30
+step1 = 0.1
+step2 = 1
+
 
 base_plots = joinpath("..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
 dir_xx = joinpath(base_plots, "XX")

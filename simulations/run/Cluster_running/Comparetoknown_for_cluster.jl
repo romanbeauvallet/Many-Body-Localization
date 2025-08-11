@@ -62,7 +62,7 @@ metadata = Dict{String,Any}(
 println("\nmetadata:")
 display(metadata)
 
-results = Dict{String,Any}(
+resultsdmrg = Dict{String,Any}(
     "energy sites tebd" => nothing,
     "energy sites dmrg" => nothing,
     "exact energy" => nothing,
@@ -73,11 +73,9 @@ results = Dict{String,Any}(
     "magnet sites dmrg" => nothing,
 )
 
-Energylist = Vector()
-AverageMagnetlist = Vector()
-Magnetlist = Vector()
 
-function void()
+
+function voiddmrg()
     ancilla, s = MBL.AncillaMPO(N)
     mps, smps = neelstate(N)
     Hamiltonian = MBL.operator(mps, h, smps, "XX")
@@ -120,6 +118,39 @@ function void()
     return flush(stdout)
 end
 
-void()
+function voidmpo()
+    st, dp = MBL.section_trunc(N, gammescale)
+    ancilla, s = MBL.AncillaMPO(N)
+    HXX = operator(mps, h, smps, "XX")
+    HXXZ = operator(mps, h, smps, "SS")
+
+    EnergylistXX = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    EnergylistXXZ = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    update = ancilla
+    gates = gatesTEBDancilla(update, h, δτ, s, op)
+    for i in eachindex(realbetalist)
+        @info "β[$i]" betalist[i]
+        update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
+        _, EnergylistXX[:, i] = energyMPO(update, HXX)
+        _, EnergylistXXZ[:, i] = energyMPO(update, HXXZ)
+        println("Average energy at β=$(betalist[i]): ", mean(Energylist; dims=1)[i])
+    end
+
+    open(savefilexxh0, "w") do io
+        avgxx = vec(mean(EnergylistXX; dims=1))
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(avgxx[i])")
+        end
+    end
+
+    open(savefilexxzh0, "w") do io
+        avgxxz = vec(mean(EnergylistXXZ; dims=1))
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(avgxxz[i])")
+        end
+    end
+end
+
+voidmpo()
 
 println("simulation finie")
