@@ -40,7 +40,10 @@ cutoff = input_data["cutoff"]
 j = input_data["axis"]
 noise = input_data["noise"]
 sweep_DMRG = input_data["number sweep dmrg"]
-beta = input_data["beta fixe"]
+betamax1 = input_data["beta max 1"]
+betamax2 = input_data["beta max 2"]
+step1 = input_data["beta step 1"]
+step2 = input_data["beta step 2"]
 savefile = String(input_data["savefile"])
 
 # ===================== data 
@@ -117,6 +120,15 @@ function voiddmrg()
     println("\nResults saved in $savefile")
     return flush(stdout)
 end
+
+base_plots = joinpath("..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
+dir_xx = joinpath(base_plots, "XX")
+dir_xxz = joinpath(base_plots, "XXZ")
+mkpath(dir_xx)
+mkpath(dir_xxz)
+
+savefilexxh0MPO = joinpath(dir_xx, "energyxxh0MPO.txt")
+savefilexxzh0MPO = joinpath(dir_xxz, "energyxxzh0MPO.txt")
 
 function voidmpo()
     st, dp = MBL.section_trunc(N, gammescale)
