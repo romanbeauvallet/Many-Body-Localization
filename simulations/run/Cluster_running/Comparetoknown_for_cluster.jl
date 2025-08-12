@@ -131,34 +131,32 @@ savefilexxh0MPO = joinpath(dir_xx, "energyxxh0MPO.txt")
 savefilexxzh0MPO = joinpath(dir_xxz, "energyxxzh0MPO.txt")
 
 function voidmpo()
-    st, dp = MBL.section_trunc(N, gammescale)
     ancilla, s = MBL.AncillaMPO(N)
     HXX = operator(mps, h, smps, "XX")
     HXXZ = operator(mps, h, smps, "SS")
 
-    EnergylistXX = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    EnergylistXXZ = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    EnergylistXX = fill(1.0, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    EnergylistXXZ = fill(1.0, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     for i in eachindex(realbetalist)
         @info "β[$i]" betalist[i]
         update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, EnergylistXX[:, i] = energyMPO(update, HXX)
-        _, EnergylistXXZ[:, i] = energyMPO(update, HXXZ)
-        println("Average energy at β=$(betalist[i]): ", mean(Energylist; dims=1)[i])
+        _, EnergylistXX[i] = energyMPO(update, HXX)/N
+        _, EnergylistXXZ[i] = energyMPO(update, HXXZ)/N
+        println("Average energy XX at β=$(betalist[i]): ", EnergylistXX[i])
+        println("Average energy XXZ at β=$(betalist[i]): ", EnergylistXXZ[i])
     end
 
     open(savefilexxh0, "w") do io
-        avgxx = vec(mean(EnergylistXX; dims=1))
         for i in eachindex(betalist)
-            println(io, "$(betalist[i]) $(avgxx[i])")
+            println(io, "$(betalist[i]) $(EnergylistXX[i])")
         end
     end
 
     open(savefilexxzh0, "w") do io
-        avgxxz = vec(mean(EnergylistXXZ; dims=1))
         for i in eachindex(betalist)
-            println(io, "$(betalist[i]) $(avgxxz[i])")
+            println(io, "$(betalist[i]) $(EnergylistXXZ[i])")
         end
     end
 end
