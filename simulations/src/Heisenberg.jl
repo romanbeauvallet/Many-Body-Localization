@@ -7,7 +7,7 @@ using ITensorMPS
 using LinearAlgebra
 using ProgressMeter
 using Statistics
-     # tune; 1–4 often best
+# tune; 1–4 often best
 ################## Functions #####################
 
 # ============================================= Initialization
@@ -285,12 +285,14 @@ return the site list and the energy per site
 function energyagainstsite(mps, h, scale, op::String)
     N = length(mps)
     start, stop = section_trunc(N, scale)
+    @show start, stop
     stop = stop < N - 2 ? stop : N - 2
     sites = collect(start:1:stop)
-    Energypersite = Array{Float64}(undef, length(sites))
+    Energypersite = Array{Float64}(undef, stop - start + 1)
     for i in eachindex(sites)
         Energypersite[i] = energysite(mps, sites[i], h, op)
     end
+    @show Energypersite
     return sites, Energypersite
 end
 

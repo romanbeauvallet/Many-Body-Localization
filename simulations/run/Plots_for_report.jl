@@ -53,7 +53,7 @@ betamax1 = input_data["beta fixe"]
 betamax2 = input_data["beta fixe"]
 =#
 
-N = 100
+N = 10
 J = 1
 γ = 0.0
 h = 0.0
@@ -69,18 +69,11 @@ betamax2 = 30
 step1 = 0.1
 step2 = 1
 
-
-base_plots = joinpath("..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
-dir_xx = joinpath(base_plots, "XX")
-dir_xxz = joinpath(base_plots, "XXZ")
-mkpath(dir_xx)
-mkpath(dir_xxz)
-
-savefilexxh0 = joinpath(dir_xx, "energyxxh0.txt")
-savefilexxzh0 = joinpath(dir_xxz, "energyxxzh0.txt")
-savefileexactenergy = joinpath(dir_xx, "energyexactxxh0.txt")
-savefilexxzdmrgh0 = joinpath(dir_xxz, "energyxxzDMRGh0.txt")
-savefilexxdmrgh0 = joinpath(dir_xx, "energyexactxxDMRGh0.txt")
+savefilexxh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyxxh0.txt")
+savefilexxzh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XXZ", "energyxxzh0.txt")
+savefileexactenergy = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyexactxxh0.txt")
+savefilexxzdmrgh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XXZ", "energyxxzDMRGh0.txt")
+savefilexxdmrgh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyexactxxDMRGh0.txt")
 
 # ====================================== Dict
 

@@ -88,7 +88,9 @@ function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::Strin
     realbetalist = pushfirst!(diff(betalist), 0) #realbetalist and betalist same length
     N = length(ancilla)
     st, dp = section_trunc(N, gammescale)
+    dp = dp < N - 2 ? dp : N - 2
     Energylist = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
+    @show size(Energylist)
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     for i in eachindex(realbetalist)

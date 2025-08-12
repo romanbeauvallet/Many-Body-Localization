@@ -121,7 +121,7 @@ function voiddmrg()
     return flush(stdout)
 end
 
-base_plots = joinpath("..", "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
+base_plots = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
 dir_xx = joinpath(base_plots, "XX")
 dir_xxz = joinpath(base_plots, "XXZ")
 mkpath(dir_xx)
