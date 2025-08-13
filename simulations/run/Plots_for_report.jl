@@ -57,7 +57,7 @@ N = 100
 J = 1
 γ = 0.0
 h = 0.0
-δτ = 1e-3
+δτ = 1e-4
 dmax = 400
 gammescale = 0.8
 cutoff = 1e-15
@@ -68,12 +68,30 @@ betamax1 = 10
 betamax2 = 30
 step1 = 0.1
 step2 = 1
+numbersweep = 1e4
+D0 = 10
 
-savefilexxh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyxxh0.txt")
-savefilexxzh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XXZ", "energyxxzh0.txt")
-savefileexactenergy = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyexactxxh0.txt")
-savefilexxzdmrgh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XXZ", "energyxxzDMRGh0.txt")
-savefilexxdmrgh0 = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt","XX", "energyexactxxDMRGh0.txt")
+savefilexxh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyxxh0.txt"
+)
+savefilexxzh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzh0.txt"
+)
+savefilexxzh0sites = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzh0sites.txt"
+)
+savefilexxzh0mpo = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzh0mpo.txt"
+)
+savefileexactenergy = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyexactxxh0.txt"
+)
+savefilexxzdmrgh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XXZ", "energyxxzDMRGh0.txt"
+)
+savefilexxdmrgh0 = joinpath(
+    "..", "analyse_simulations_julia", "DATA_Local", "Plots_txt", "XX", "energyexactxxDMRGh0.txt"
+)
 
 # ====================================== Dict
 
@@ -94,53 +112,85 @@ metadata = Dict{String, Any}(
     "disorder" => h,
     "number of spins measured" => gammescale,
     "beta list values" => betalist,
-    "noise DMRG" => noise, 
-    "nombre de sweep DMRG" =>n_sweep
+    "noise DMRG" => noise,
+    "nombre de sweep DMRG" => n_sweep,
+    "init bond dimension" => D0,
+    "fixed number of sweep" => numbersweep,
 )
 println("\nmetadata:")
 display(metadata)
 
 # ====================================== begin
 
-st, dp = MBL.section_trunc(N, gammescale)
-ancilla, s = MBL.AncillaMPO(N)
-mps, smps = neelstate(N)
-HXX = operator(mps, h, smps, "XX")
-HXXZ = operator(mps, h, smps, "SS")
+function void()
+    st, dp = MBL.section_trunc(N, gammescale)
+    ancilla, s = MBL.AncillaMPO(N)
+    mps, smps = neelstate(N)
+    HXX = operator(mps, h, smps, "XX")
+    HXXZ = operator(mps, h, smps, "SS")
 
-energyxx = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XX", gammescale, dmax)
-open(savefilexxh0, "w") do io
-    avgxx = vec(mean(energyxx; dims=1))
-    for i in eachindex(betalist)
-        println(io, "$(betalist[i]) $(avgxx[i])")
+    energyxx = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "XX", gammescale, dmax)
+    open(savefilexxh0, "w") do io
+        avgxx = vec(mean(energyxx; dims=1))
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(avgxx[i])")
+        end
+    end
+    psi, energyXXDMRG = MBL.groundstateDMRG(mps, HXX, n_sweep, dmax, cutoff, noise)
+    open(savefilexxdmrgh0, "w") do io
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(energyXXDMRG)")
+        end
+    end
+    psi, energyXXZDMRG = MBL.groundstateDMRG(mps, HXXZ, n_sweep, dmax, cutoff, noise)
+    open(savefilexxzdmrgh0, "w") do io
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(energyXXZDMRG)")
+        end
+    end
+    energyxxz = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax)
+    open(savefilexxzh0, "w") do io
+        avgxxz = vec(mean(energyxxz; dims=1))
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(avgxxz[i])")
+        end
+    end
+    exactenergy = [MBL.exactenergyXX(β, h; γ=0.0) for β in betalist]
+    open(savefileexactenergy, "w") do io
+        for i in eachindex(betalist)
+            println(io, "$(betalist[i]) $(exactenergy[i])")
+        end
     end
 end
-psi, energyXXDMRG = MBL.groundstateDMRG(mps, HXX, n_sweep, dmax, cutoff, noise)
-open(savefilexxdmrgh0, "w") do io
-    for i in eachindex(betalist)
-        println(io, "$(betalist[i]) $(energyXXDMRG)")
+
+function voidmpo()
+    gammelength = [10, 100, 10]
+    sites = collect(gammelength[1]:gammelength[3]:gammelength[2])
+    averageenergysites = fill(1.0, length(sites))
+    averageenergympoXXZ = fill(1.0, length(sites))
+    @showprogress for i in eachindex(sites)
+        mpstransit, s = neelstate(sites[i])
+        HXXZ = operator(mpstransit, h, s, "SS")
+        gates = gateTrotterSuzukirow(mpstransit, h, δτ, "SS")
+        converged = tebdevolutionrow!(numbersweep, mpstransit, gates, cutoff, dmax)
+        _, averageenergytemp = energyagainstsite(converged, h, gammescale, "SS")
+        energyMPOxxz = mean([measure_H(converged, k, HXXZ) for k in collect(1:sites[i])])/sites[i]
+        averageenergysites[i] = mean(averageenergytemp)
+        averageenergympoXXZ[i] = energyMPOxxz
+        open(savefilexxzh0mpo, "w") do io
+        for i in eachindex(sites)
+            println(io, "$(sites[i]) $(averageenergympoXXZ[i])")
+            end
+        end
+
+    open(savefilexxzh0sites, "w") do io
+        for i in eachindex(sites)
+            println(io, "$(sites[i]) $(averageenergysites[i])")
+        end
     end
-end
-psi, energyXXZDMRG = MBL.groundstateDMRG(mps, HXXZ, n_sweep, dmax, cutoff, noise)
-open(savefilexxzdmrgh0, "w") do io
-    for i in eachindex(betalist)
-        println(io, "$(betalist[i]) $(energyXXZDMRG)")
-    end
-end
-energyxxz = MBL.energyforbetalist(betalist, ancilla, δτ, h, s, cutoff, "SS", gammescale, dmax)
-open(savefilexxzh0, "w") do io
-    avgxxz = vec(mean(energyxxz; dims=1))
-    for i in eachindex(betalist)
-        println(io, "$(betalist[i]) $(avgxxz[i])")
-    end
-end
-exactenergy = [MBL.exactenergyXX(β, h; γ=0.0) for β in betalist]
-open(savefileexactenergy, "w") do io
-    for i in eachindex(betalist)
-        println(io, "$(betalist[i]) $(exactenergy[i])")
     end
 end
 
+voidmpo()
 
-
-
+println("Simulation done")
