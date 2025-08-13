@@ -44,7 +44,8 @@ betamax1 = input_data["beta max 1"]
 betamax2 = input_data["beta max 2"]
 step1 = input_data["beta step 1"]
 step2 = input_data["beta step 2"]
-savefile = String(input_data["savefile"])
+savefilexxh0 = String(input_data["savefilexxh0"])
+savefilexxzh0 = String(input_data["savefilexxzh0"])
 
 # ===================== data 
 
@@ -118,15 +119,6 @@ function voiddmrg()
     println("\nResults saved in $savefile")
     return flush(stdout)
 end
-
-base_plots = joinpath("..", "analyse_simulations_julia", "DATA_Local", "Plots_txt")
-dir_xx = joinpath(base_plots, "XX")
-dir_xxz = joinpath(base_plots, "XXZ")
-mkpath(dir_xx)
-mkpath(dir_xxz)
-
-savefilexxh0MPO = joinpath(dir_xx, "energyxxh0MPO.txt")
-savefilexxzh0MPO = joinpath(dir_xxz, "energyxxzh0MPO.txt")
 
 gammelength = [10, 100, 10]
 sites = collect(gammelength[1]:gammelength[3]:gammelength[2])
