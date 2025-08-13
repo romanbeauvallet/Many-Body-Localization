@@ -82,7 +82,8 @@ H -- MPO operator of the energy (Hamiltonian)
 return the Tr(ancilla*H)
 """
 function energyMPO(ancilla, H)
-    return inner(ancilla, H)
+    update = ancilla
+    return inner(update, H)
 end
 
 """

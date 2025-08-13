@@ -65,7 +65,7 @@ function energyaverageagainstlength(
     gammelength::Tuple, gammescale, numbersweep, cutoff, dmax, D0, δτ, h, op::String
 )
     sites = collect(gammelength[1]:gammelength[3]:gammelength[2])
-    averageenergy = Vector(undef, length(sites))
+    averageenergy = Array{Float64}(undef, length(sites))
     @showprogress for i in eachindex(sites)
         mpstransit, _ = random_initialized_MPS(sites[i], D0)
         gates = gateTrotterSuzukirow(mpstransit, h, δτ, op)
@@ -90,7 +90,6 @@ function energyforbetalist(betalist, ancilla::MPO, δτ, h, s, cutoff, op::Strin
     st, dp = section_trunc(N, gammescale)
     dp = dp < N - 2 ? dp : N - 2
     Energylist = fill(1.0,  dp - st + 1, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    @show size(Energylist)
     update = ancilla
     gates = gatesTEBDancilla(update, h, δτ, s, op)
     for i in eachindex(realbetalist)

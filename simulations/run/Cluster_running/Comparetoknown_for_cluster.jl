@@ -76,8 +76,6 @@ resultsdmrg = Dict{String,Any}(
     "magnet sites dmrg" => nothing,
 )
 
-
-
 function voiddmrg()
     ancilla, s = MBL.AncillaMPO(N)
     mps, smps = neelstate(N)
@@ -130,33 +128,36 @@ mkpath(dir_xxz)
 savefilexxh0MPO = joinpath(dir_xx, "energyxxh0MPO.txt")
 savefilexxzh0MPO = joinpath(dir_xxz, "energyxxzh0MPO.txt")
 
-function voidmpo()
-    ancilla, s = MBL.AncillaMPO(N)
-    HXX = operator(mps, h, smps, "XX")
-    HXXZ = operator(mps, h, smps, "SS")
+gammelength = [10, 100, 10]
+sites = collect(gammelength[1]:gammelength[3]:gammelength[2])
 
-    EnergylistXX = fill(1.0, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    EnergylistXXZ = fill(1.0, length(realbetalist)) #fist dimension for the spin chain, second dimension for the beta list
-    update = ancilla
-    gates = gatesTEBDancilla(update, h, δτ, s, op)
-    for i in eachindex(realbetalist)
-        @info "β[$i]" betalist[i]
-        update = TEBDancilla!(update, gates, realbetalist[i] / 2, cutoff, δτ, dmax)
-        _, EnergylistXX[i] = energyMPO(update, HXX)/N
-        _, EnergylistXXZ[i] = energyMPO(update, HXXZ)/N
-        println("Average energy XX at β=$(betalist[i]): ", EnergylistXX[i])
-        println("Average energy XXZ at β=$(betalist[i]): ", EnergylistXXZ[i])
+function voidmpo()
+    averageenergysites = Array{Float64}(undef, length(sites))
+    averageenergympoXX = Array{Float64}(undef, length(sites))
+    averageenergympoXXZ = Array{Float64}(undef, length(sites))
+    @showprogress for i in eachindex(sites)
+        mpstransit, s = random_initialized_MPS(sites[i], D0)
+        HXX = operator(mpstransit, h, s, "XX")
+        HXXZ = operator(mpstransit, h, s, "SS")
+        gates = gateTrotterSuzukirow(mpstransit, h, δτ, op)
+        converged = tebdevolutionrow!(numbersweep, mpstransit, gates, cutoff, dmax)
+        _, averageenergytemp = energyagainstsite(converged, h, gammescale, op)
+        energyMPOxx = energyMPO(converged, HXX)/sites[i]
+        energyMPOxxz = energyMPO(converged, HXXZ)/sites[i]
+        averageenergysites[i] = mean(averageenergytemp)
+        averageenergympoXX[i] = energyMPOxx
+        averageenergympoXXZ[i] = energyMPOxxz
     end
 
     open(savefilexxh0, "w") do io
-        for i in eachindex(betalist)
-            println(io, "$(betalist[i]) $(EnergylistXX[i])")
+        for i in eachindex(sites)
+            println(io, "$(sites[i]) $(averageenergympoXX[i])")
         end
     end
 
     open(savefilexxzh0, "w") do io
-        for i in eachindex(betalist)
-            println(io, "$(betalist[i]) $(EnergylistXXZ[i])")
+        for i in eachindex(sites)
+            println(io, "$(sites[i]) $(averageenergympoXXZ[i])")
         end
     end
 end

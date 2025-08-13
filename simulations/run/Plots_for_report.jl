@@ -53,12 +53,12 @@ betamax1 = input_data["beta fixe"]
 betamax2 = input_data["beta fixe"]
 =#
 
-N = 10
+N = 100
 J = 1
 γ = 0.0
 h = 0.0
 δτ = 1e-3
-dmax = 300
+dmax = 400
 gammescale = 0.8
 cutoff = 1e-15
 j = "z"
