@@ -30,3 +30,4 @@ CACHEDIR.TAG
 # optionnel 
 
 simulations/Manifest.toml
+simulations/Profile.jlprof
