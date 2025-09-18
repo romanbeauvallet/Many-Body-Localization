@@ -12,10 +12,10 @@ using Statistics
 
 # ============================================= Initialization
 """
-s -- sites index
+N -- length
 D -- bond dimension 
 
-return an randmoly initialized MPS with the sites indexes in input 
+return an randmoly initialized MPS of length N 
 """
 function random_initialized_MPS(N, D)
     s = ITensors.siteinds("S=1/2", N)
@@ -26,7 +26,7 @@ end
 """
 N -- number of sites
 
-return a Neel state of the form |↑↓↑↓...> with N sites
+return a Neel state of the form |↑↓↑↓...> with N sites and coneerved quantum numbers
 """
 function neelstate(N)
     s = siteinds("S=1/2", N; conserve_qns=true)
@@ -40,7 +40,7 @@ N -- number of sites
 J -- coupling constant
 h -- disorder constant
 
-Define the operator expτ(-JSS - hSz)
+define the operator expτ(-JSS - hSz), warning if there are random disorder since every gate is a two sites gate even for the Sz operator
 """
 function ITensors.op(::OpName"exp-τSS", ::SiteType"S=1/2", s1::Index, s2::Index; τ, h)
     H =
@@ -313,35 +313,54 @@ function energysitedisorder(mps::MPO, sitemeasure, gate)
 end
 
 """
-j -- axis of the spin operator 
 n -- starting site
 p -- the other site, the distance between the two sites is p-n+1
 
 return the correlation function
 """
-function correlationSpinoperator(mps, n, p, j)
+function correlationSpinoperator(mps, n, p, ::OpName"z")
     copy = orthogonalize(mps, n)
     sn = siteind(copy, n)
     sp = siteind(copy, p)
-    if j == "z"
-        S_n = op("Sz", sn)
-        S_p = op("Sz", sp)
-        gate = S_n * S_p
-        psi_np = apply(gate, copy)
-        return real(inner(copy, psi_np))
-    elseif j == "x"
-        S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
-        S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
-        gate = S_n * S_p
-        psi_np = apply(gate, copy)
-        return real(inner(copy, psi_np))
-    elseif j == "y"
-        S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
-        S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
-        gate = S_n * S_p
-        psi_np = apply(gate, copy)
-        return real(inner(copy, psi_np))
-    end
+    S_n = op("Sz", sn)
+    S_p = op("Sz", sp)
+    gate = S_n * S_p
+    psi_np = apply(gate, copy)
+    return real(inner(copy, psi_np))
+end
+
+"""
+n -- starting site
+p -- the other site, the distance between the two sites is p-n+1
+
+return the correlation function
+"""
+function correlationSpinoperator(mps, n, p, ::OpName"x")
+    copy = orthogonalize(mps, n)
+    sn = siteind(copy, n)
+    sp = siteind(copy, p)
+    S_n = 1 / 2 * (op("S+", sn) + op("S-", sn))
+    S_p = 1 / 2 * (op("S+", sp) + op("S-", sp))
+    gate = S_n * S_p
+    psi_np = apply(gate, copy)
+    return real(inner(copy, psi_np))
+end
+
+"""
+n -- starting site
+p -- the other site, the distance between the two sites is p-n+1
+
+return the correlation function
+"""
+function correlationSpinoperator(mps, n, p, ::OpName"y")
+    copy = orthogonalize(mps, n)
+    sn = siteind(copy, n)
+    sp = siteind(copy, p)
+    S_n = -1im / 2 * (op("S+", sn) - op("S-", sn))
+    S_p = -1im / 2 * (op("S+", sp) - op("S-", sp))
+    gate = S_n * S_p
+    psi_np = apply(gate, copy)
+    return real(inner(copy, psi_np))
 end
 
 """
@@ -367,7 +386,7 @@ end
 
 # ============================================= Else
 """
-mps -- mps you want to have the max bon dimension 
+input -- mps you want to have the max bon dimension 
 
 return the max bond dimension in the mps
 """
@@ -394,15 +413,4 @@ function section_trunc(N, scale)
     q = div(N, 2)
     be, st = max(floor(Int, (1 + (1 - scale) * q)), 1), min(floor(Int, ((scale + 1) * q)), N)
     return be, st
-end
-
-"""
-T -- a random array 
-s1 -- index 
-s2 -- index
-
-return a full random operator 
-"""
-function randomoperator(T, s1, s2)
-    return ITensor(T, s1, s2, dag(s1), dag(s2))
 end

@@ -9,7 +9,6 @@ using LinearAlgebra
 using ProgressMeter
 using Statistics
 using ITensors: Index, QN, Out, In, dag
-using Printf
 using QuadGK
 using Random
 using Distributions
@@ -18,7 +17,7 @@ using Distributions
 """
 N -- number of sites
 
-return an initialized ancilla of length N with conserved quantum numbers
+return an initialized ancilla of length N with conserved quantum numbers at infinite temperature.
 """
 function AncillaMPO(N)
     s = ITensors.siteinds("S=1/2", N; conserve_qns=true)
@@ -33,7 +32,7 @@ s -- Index of ancilla
 op -- String, to choose which model you want (Heisenberg or XY)
 δτ -- step of Trotter-Suzuki
 
-return the vector of gates (ITensor type)
+return the vector of gates (ITensors.ITensor type)
 """
 function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
     N = length(ancilla)
@@ -47,6 +46,24 @@ function gatesTEBDancilla(ancilla, h, δτ, s, op::String)
         return gates
     end
 end
+
+#==
+it would be better to use the Julia strengh and define two funciton type depending on the operator type but this implies to change every function in all files 
+
+function gatesTEBDancilla(ancilla, h, δτ, s,::OpName"XX")
+    N = length(ancilla)
+    gates = ops([("exp-τXY", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
+    append!(gates, reverse(gates))
+    return gates
+end
+
+function gatesTEBDancilla(ancilla, h, δτ, s,::OpName"SS")
+    N = length(ancilla)
+    gates = ops([("exp-τSS", (n, n + 1), (τ=δτ / 2, h=h)) for n in 1:1:(N - 1)], s)
+    append!(gates, reverse(gates))
+    return gates
+end
+==#
 
 """
 ancilla -- MPS on which gates will be applied
@@ -67,11 +84,10 @@ function TEBDancilla!(ancilla, gates, beta, cutoff, δτ, Dmax)
     begin_time = time()
     for _ in 1:k
         ancilla = apply(gates, ancilla; cutoff, maxdim=Dmax)
-        #@printf("β = %.2f energy = %.8f\n", β, energyancilla)
         ancilla = ancilla / tr(ancilla)
     end
     end_time = time()
-    println("time to evolve: ", end_time - begin_time, " s")
+    println("time to evolve to $beta: ", end_time - begin_time, " s")
     return ancilla
 end
 
@@ -79,7 +95,7 @@ end
 ancilla -- MPS
 H -- MPO operator of the energy (Hamiltonian)
 
-return the Tr(ancilla*H)
+return Tr(ancilla*H)
 """
 function energyMPO(ancilla, H)
     update = ancilla
@@ -89,15 +105,15 @@ end
 """
 β -- inverse temperature
 h -- disorder
-γ -- proportion of XX and YY in the model
+y -- proportion of XX and YY in the model
 
 exact energy at temperature beta for XY model at temperature β with disorder h 
 """
-function exactenergyXX(β, h; γ=0.0)
-    function ε(k, h, γ)
-        return sqrt((cos(k) - h)^2 + (γ * sin(k))^2)
+function exactenergyXX(β, h; y=0.0)
+    function ε(k, h, y)
+        return sqrt((cos(k) - h)^2 + (y * sin(k))^2)
     end
-    integrand(k) = ε(k, h, γ) * tanh(0.5 * β * ε(k, h, γ)) / (2 * pi)
+    integrand(k) = ε(k, h, y) * tanh(0.5 * β * ε(k, h, y)) / (2 * pi)
     val, _ = quadgk(integrand, -pi, pi; rtol=1e-9)
     return -val / 2
 end
@@ -132,6 +148,8 @@ rng -- kernel to generate the random numbers
 ancilla -- MPS
 s -- index sites
 h -- disorder magnitude
+
+return gates to measure and evolve your MPS with one fixed disorder magnitude 
 """
 function evolutionwithrandomdisordergates(rng, ancilla, s, h::Float64, δτ)
     N = length(ancilla)
@@ -152,6 +170,8 @@ end
 ancilla -- MPS
 s -- index sites
 h -- Vector of disorders (for each site)
+
+return evolution and measure gates when you already the random disorder vector, to reproduce the results with a fixed and consistant vector
 """
 function evolutionwithrandomdisordergates(ancilla, s, h::Vector, δτ)
     N = length(ancilla)
@@ -186,16 +206,16 @@ end
 x -- point
 h -- upper boundary of the disorder magnitude
 y -- pic center index
-σ -- pic width
+o -- pic width
 H -- amplitude of the pic
 
-Define the disorder distribution
+define the disorder distribution: normal distribution on hard interval [0, h], h is the max disorder magnitude
 """
-function samplingdisorder(x, h, y, σ, H)
+function samplingdisorder(x, h, y, o, H)
     if x < 0 || x > h
         return 0.0
     end
-    return 1 + H * exp(-((x - y)^2) / (2σ^2))
+    return 1 + H * exp(-((x - y)^2) / (2o^2))
 end
 
 """
@@ -206,7 +226,7 @@ init -- seed
 
 return the disorder sample
 """
-function rejection_sample(N::Int, X, y, init; σ=0.005X, A=5.0)
+function rejection_sample(N::Int, X, y, init; o=0.005X, A=5.0)
     samples = Float64[]
     rng = MersenneTwister(init)
 
@@ -216,7 +236,7 @@ function rejection_sample(N::Int, X, y, init; σ=0.005X, A=5.0)
     while length(samples) < N
         x = rand(rng) * X  # tirage uniforme sur [0, X]
         u = rand(rng) * max_density
-        if u < samplingdisorder(x, X, y, σ, A)
+        if u < samplingdisorder(x, X, y, o, A)
             push!(samples, x)
         end
     end
@@ -224,11 +244,14 @@ function rejection_sample(N::Int, X, y, init; σ=0.005X, A=5.0)
 end
 
 """
+energylist -- list of the energy
+betalist -- list of beta
+
 return the gradient of a list (energylist) with respect to another list (betalist) by finite differences method
 """
 function specificheat(energylist, betalist)
     n, m = length(energylist), length(betalist)
-    @assert n == m "Gradient not possible because two different length"
+    @assert n == m "Gradient not possible because two different lengths"
     Grandientlist = diff(energylist) ./ diff(betalist)
     return betalist[begin:(end - 1)], Grandientlist
 end
